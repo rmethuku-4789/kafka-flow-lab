@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f3f5f7" />
+    <title>Kafka Flow Lab — One dispute, three outcomes</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="Kafka Flow Lab home"><span class="brand-mark"><i></i><i></i><i></i></span><span>KAFKA <b>FLOW LAB</b></span></a>
+        <div class="topbar-right"><span class="lesson-pill"><span></span> SCENARIO 01</span><span class="environment-tag">SIMULATED · NO BACKEND</span></div>
+      </header>
+
+      <section class="intro" aria-labelledby="page-title">
+        <div class="intro-copy"><p class="eyebrow">THE DISPUTE EVENT · A RECAP</p><h1 id="page-title">One dispute.<br /><em>Three independent reactions.</em></h1></div>
+        <div class="intro-aside"><span class="question-mark">?</span><p>When a buyer opens a dispute, does Customer Info wait for three teams to finish?</p><span class="answer-cue">WATCH THE EVENT TRAVEL <b>↓</b></span></div>
+      </section>
+
+      <section class="simulation" aria-label="Kafka event flow simulator">
+        <div class="stage-heading"><div><span class="stage-index">01</span><span>THE EVENT'S JOURNEY</span></div><div class="stage-actions"><span class="live-indicator" id="flow-indicator"><i></i><span id="flow-status">CONTINUOUS SIMULATION</span></span><button class="flow-toggle" id="flow-toggle" type="button" aria-pressed="false">Pause</button></div></div>
+        <div class="flow-stage" id="flow-stage">
+          <svg class="connections" id="connections" aria-hidden="true"><defs><linearGradient id="flow-gradient"><stop offset="0" stop-color="#64748b"/><stop offset="1" stop-color="#2e74ed"/></linearGradient><filter id="soft-glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter><marker id="arrowhead" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto" markerUnits="strokeWidth"><path d="M0 0 8 4 0 8Z" fill="context-stroke"/></marker></defs><g id="connection-paths"></g></svg>
+          <div class="travel-packet" id="travel-packet" aria-hidden="true"><span></span><b>created</b></div>
+
+          <article class="service-card producer-card" id="producer-card">
+            <div class="card-topline"><span class="role-label"><span class="role-dot producer-dot"></span> PRODUCER</span><span class="step-status" id="producer-status">READY</span></div>
+            <div class="service-title"><div class="service-icon customer-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/></svg></div><div><h2>cw-customer-info</h2><p>Dispute created</p></div></div>
+            <div class="event-summary"><span class="event-summary-icon">↗</span><span><b>created</b><small>Dispute event</small></span></div>
+            <div class="producer-foot"><span class="pulse-dot"></span><span>Does not wait for consumers</span></div>
+          </article>
+
+          <section class="broker-card" id="broker-card" aria-label="Kafka broker and topic partitions">
+            <div class="broker-header"><div><div class="card-topline"><span class="role-label"><span class="role-dot kafka-dot"></span> EVENT LOG</span><span class="broker-state" id="broker-status">IDLE</span></div><h2>Kafka <span>broker</span></h2></div></div>
+            <div class="topic-label"><span class="topic-led"></span><span>…_customer_info_disputes</span><span class="topic-chip">TOPIC</span></div>
+            <div class="partition-list">
+              <div class="partition-row" data-partition="P0"><span class="partition-name">P0</span><div class="partition-track"><span class="record-slot" id="record-slot-p0"><span class="record-stamp">0</span><b>created</b><i>evt-001</i></span></div><span class="partition-count" id="partition-count-p0">EMPTY</span></div>
+              <div class="partition-row" data-partition="P1"><span class="partition-name">P1</span><div class="partition-track"><span class="record-slot" id="record-slot-p1"><span class="record-stamp">0</span><b>created</b><i>evt-001</i></span></div><span class="partition-count" id="partition-count-p1">EMPTY</span></div>
+              <div class="partition-row" data-partition="P2"><span class="partition-name">P2</span><div class="partition-track"><span class="record-slot" id="record-slot-p2"><span class="record-stamp">0</span><b>created</b><i>evt-001</i></span></div><span class="partition-count" id="partition-count-p2">EMPTY</span></div>
+            </div>
+            <div class="broker-footer"><span class="retention-icon">↻</span><span>One topic · separate consumer groups</span></div>
+          </section>
+
+          <section class="consumer-column" aria-label="Independent consumer groups">
+            <div class="consumer-column-head"><span class="role-label"><span class="role-dot consumer-dot"></span> CONSUMERS</span><span class="group-note">3 SEPARATE GROUPS</span></div>
+            <article class="service-card consumer-card" id="orders-card" data-consumer="orders">
+              <div class="consumer-main"><div class="service-icon orders-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 7 2 2 4-4"/><path d="m5 15 2 2 4-4"/><path d="M14 7h5M14 15h5"/><path d="M4 3.5h16v17H4z"/></svg></div><div class="consumer-title"><h3>cw-orders</h3></div><span class="delivery-indicator" id="orders-delivery">WAITING</span></div>
+              <div class="consumer-progress"><span class="group-tag">GROUP · …_orders_karafka</span><span class="offset-readout" id="orders-offset">NO COMMIT YET</span></div>
+              <div class="work-result"><span class="work-icon">✓</span><span><b>show claim open banner</b></span></div>
+            </article>
+            <article class="service-card consumer-card" id="finance-card" data-consumer="finance">
+              <div class="consumer-main"><div class="service-icon finance-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5c-.7-.8-1.7-1.2-3-1.2-1.5 0-2.6.8-2.6 1.9s1.1 1.6 2.7 1.9 2.8.8 2.8 2-1.2 2.1-2.9 2.1c-1.3 0-2.5-.5-3.3-1.4M12.5 5.5v13"/></svg></div><div class="consumer-title"><h3>cw-finance</h3></div><span class="delivery-indicator" id="finance-delivery">WAITING</span></div>
+              <div class="consumer-progress"><span class="group-tag">GROUP · …_finance_karafka</span><span class="offset-readout" id="finance-offset">NO COMMIT YET</span></div>
+              <div class="work-result"><span class="work-icon">✓</span><span><b>block payout</b></span></div>
+            </article>
+            <article class="service-card consumer-card" id="message-card" data-consumer="message">
+              <div class="consumer-main"><div class="service-icon message-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H6l-3 2v-5.2A7.5 7.5 0 1 1 20 11.5Z"/><path d="M7 11.5h.01M12 11.5h.01M17 11.5h.01"/></svg></div><div class="consumer-title"><h3>cw-message-center</h3><p>Eligible cases only</p></div><span class="delivery-indicator" id="message-delivery">WAITING</span></div>
+              <div class="consumer-progress"><span class="group-tag">GROUP · …_message_center_karafka</span><span class="offset-readout" id="message-offset">NO COMMIT YET</span></div>
+              <div class="work-result"><span class="work-icon">✓</span><span><b>create system message</b></span></div>
+            </article>
+          </section>
+        </div>
+        <div class="simulation-note"><span class="note-symbol">↻</span><p>Groups read and commit independently. Environment prefixes are omitted. Catawiki keys by dispute ID; this demo rotates partitions.</p></div>
+      </section>
+    </main>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
