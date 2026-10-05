@@ -8,9 +8,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/recap.css" />
-    <link rel="stylesheet" href="/groups.css" />
-    <link rel="stylesheet" href="/continuation-lessons.css" />
+    <link rel="stylesheet" href="/shared/styles/theme.css" />
+    <link rel="stylesheet" href="/shared/styles/flow-layout.css" />
+    <link rel="stylesheet" href="/shared/styles/continuation-lessons.css" />
   </head>
   <body data-lesson="retries">
     <div class="app-shell">
@@ -22,12 +22,12 @@
         <label class="scenario-picker">
           <span class="sr-only">Choose a Kafka scenario</span>
           <select id="scenario-select">
-            <option value="/recap">01 · Recap</option>
-            <option value="/groups">02 · Consumer groups</option>
-            <option value="/broker-failure">03 · Broker failure</option>
-            <option value="/retries-dlq" selected>04 · Retries & DLQ</option>
-            <option value="/offsets-idempotency">05 · Offsets & idempotency</option>
-            <option value="/schema-evolution">06 · Schema evolution</option>
+            <option value="%BASE_URL%recap/">01 · Recap</option>
+            <option value="%BASE_URL%groups/">02 · Consumer groups</option>
+            <option value="%BASE_URL%broker-failure/">03 · Broker failure</option>
+            <option value="%BASE_URL%retries-dlq/" selected>04 · Retries & DLQ</option>
+            <option value="%BASE_URL%offsets-idempotency/">05 · Offsets & idempotency</option>
+            <option value="%BASE_URL%schema-evolution/">06 · Schema evolution</option>
           </select>
           <span class="select-chevron" aria-hidden="true">⌄</span>
         </label>
@@ -115,6 +115,6 @@
         </footer>
       </main>
     </div>
-    <script type="module" src="/continuation-lessons.js"></script>
+    <script type="module" src="/shared/scripts/continuation-lessons.js"></script>
   </body>
 </html>

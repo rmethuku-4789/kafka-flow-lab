@@ -680,36 +680,47 @@ async function addReader() {
   render();
   await new Promise(requestAnimationFrame);
   assertActive(signal);
-  for (let index = 0; index < 2; index += 1) {
-    const record = await publish("DisputeCreated", 0, `finance-b-start-${index + 1}`);
-    await readRecord(record, "finance-B", "finance-copy-b", { processTime: 420 });
-  }
-  let recoveryDone = false;
-  const recoverA = async () => {
-    while (groupLag("finance-disputes")) {
-      assertActive(signal);
-      const pending = state.records.filter((record) => record.partition === 0 && record.offset >= (state.offsets["finance-disputes"][0] ?? 0));
-      const batch = pending.length > 1 ? pending : null;
-      const record = batch ? batch.at(-1) : pending[0];
-      await readRecord(record, "finance-A", "finance-disputes", { processTime: batch ? 5500 : 1600, existing: true, batchRecords: batch });
+  startIndependentReaderFlow(signal);
+}
+
+function startIndependentReaderFlow(signal) {
+  const liveFlow = (async () => {
+    for (let index = 0; index < 2; index += 1) {
+      const record = await publish("DisputeCreated", 0, `finance-b-start-${index + 1}`);
+      await readRecord(record, "finance-B", "finance-copy-b", { processTime: 420 });
     }
-    recoveryDone = true;
-  };
-  await Promise.all([
-    recoverA(),
-    (async () => {
-      while (!recoveryDone) {
+    let recoveryDone = false;
+    const recoverA = async () => {
+      while (groupLag("finance-disputes")) {
         assertActive(signal);
-        const record = await publish("DisputeCreated", 0, `finance-b-recovery-${state.records.length}`);
-        await readRecord(record, "finance-B", "finance-copy-b", { processTime: 420 });
-        if (!recoveryDone) await wait(3500);
+        const pending = state.records.filter((record) => record.partition === 0 && record.offset >= (state.offsets["finance-disputes"][0] ?? 0));
+        const batch = pending.length > 1 ? pending : null;
+        const record = batch ? batch.at(-1) : pending[0];
+        await readRecord(record, "finance-A", "finance-disputes", { processTime: batch ? 5500 : 1600, existing: true, batchRecords: batch });
       }
-    })(),
-  ]);
-  const remaining = nextGroupRecord("finance-disputes", [0]);
-  if (remaining) await readRecord(remaining, "finance-A", "finance-disputes", { processTime: 900, existing: true });
-  laggedMembers.delete("A");
-  duplicateReady = true;
+      recoveryDone = true;
+    };
+    await Promise.all([
+      recoverA(),
+      (async () => {
+        while (!recoveryDone) {
+          assertActive(signal);
+          const record = await publish("DisputeCreated", 0, `finance-b-recovery-${state.records.length}`);
+          await readRecord(record, "finance-B", "finance-copy-b", { processTime: 420 });
+          if (!recoveryDone) await wait(3500);
+        }
+      })(),
+    ]);
+    const remaining = nextGroupRecord("finance-disputes", [0]);
+    if (remaining) await readRecord(remaining, "finance-A", "finance-disputes", { processTime: 900, existing: true });
+    laggedMembers.delete("A");
+    duplicateReady = true;
+    await startDuplicateProcessing(signal);
+  })();
+  startLiveFlow([liveFlow]);
+}
+
+async function startDuplicateProcessing(signal) {
   while (true) {
     assertActive(signal);
     const record = await publish("DisputeCreated", 0, `finance-pair-${state.records.length}`);
@@ -828,6 +839,7 @@ async function drainAssignedRecords() {
 }
 
 async function advance() {
+  if (busy) return;
   if (memberTransitionSignal && !memberTransitionSignal.aborted) return;
   if (state.scene >= scenes.length - 1) return;
   const currentScene = state.scene;

@@ -7,21 +7,21 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/recap.css" />
-  <link rel="stylesheet" href="/groups.css" />
-  <link rel="stylesheet" href="/broker-failure.css" />
+  <link rel="stylesheet" href="/shared/styles/theme.css" />
+  <link rel="stylesheet" href="/shared/styles/flow-layout.css" />
+  <link rel="stylesheet" href="/scenarios/broker-failure/broker-failure.css" />
 </head>
 <body>
 <div class="app-shell">
   <header class="page-header">
     <div class="title-block"><p class="eyebrow">DISPUTE EVENTS · FINANCE PROCESSING</p><h1>When a broker <span>fails.</span></h1></div>
     <label class="scenario-picker"><span class="sr-only">Choose a Kafka scenario</span><select id="scenario-select">
-            <option value="/recap">01 · Recap</option>
-            <option value="/groups">02 · Consumer groups</option>
-            <option value="/broker-failure" selected>03 · Broker failure</option>
-            <option value="/retries-dlq">04 · Retries & DLQ</option>
-            <option value="/offsets-idempotency">05 · Offsets & idempotency</option>
-            <option value="/schema-evolution">06 · Schema evolution</option>
+            <option value="%BASE_URL%recap/">01 · Recap</option>
+            <option value="%BASE_URL%groups/">02 · Consumer groups</option>
+            <option value="%BASE_URL%broker-failure/" selected>03 · Broker failure</option>
+            <option value="%BASE_URL%retries-dlq/">04 · Retries & DLQ</option>
+            <option value="%BASE_URL%offsets-idempotency/">05 · Offsets & idempotency</option>
+            <option value="%BASE_URL%schema-evolution/">06 · Schema evolution</option>
           </select><span class="select-chevron" aria-hidden="true">⌄</span></label>
   </header>
   <main class="stage" aria-label="Kafka broker failure scenario">
@@ -64,6 +64,6 @@
     </footer>
   </main>
 </div>
-<script type="module" src="/broker-failure-simulation.js"></script>
+<script type="module" src="/scenarios/broker-failure/broker-failure-simulation.js"></script>
 </body>
 </html>

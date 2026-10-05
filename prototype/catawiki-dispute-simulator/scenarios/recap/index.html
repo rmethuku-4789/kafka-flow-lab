@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="./recap.css" />
+    <link rel="stylesheet" href="/shared/styles/theme.css" />
   </head>
   <body>
     <div class="app-shell">
@@ -20,12 +20,12 @@
         <label class="scenario-picker">
           <span class="sr-only">Choose a Kafka scenario</span>
           <select id="scenario-select">
-            <option value="/recap" selected>01 · Recap</option>
-            <option value="/groups">02 · Consumer groups</option>
-            <option value="/broker-failure">03 · Broker failure</option>
-            <option value="/retries-dlq">04 · Retries & DLQ</option>
-            <option value="/offsets-idempotency">05 · Offsets & idempotency</option>
-            <option value="/schema-evolution">06 · Schema evolution</option>
+            <option value="%BASE_URL%recap/" selected>01 · Recap</option>
+            <option value="%BASE_URL%groups/">02 · Consumer groups</option>
+            <option value="%BASE_URL%broker-failure/">03 · Broker failure</option>
+            <option value="%BASE_URL%retries-dlq/">04 · Retries & DLQ</option>
+            <option value="%BASE_URL%offsets-idempotency/">05 · Offsets & idempotency</option>
+            <option value="%BASE_URL%schema-evolution/">06 · Schema evolution</option>
           </select>
           <span class="select-chevron" aria-hidden="true">⌄</span>
         </label>
@@ -124,11 +124,11 @@
           <div class="playback-right">
             <span class="flow-state" id="flow-state"><i></i><span>LIVE</span></span>
             <button class="reset-button" id="reset-button" type="button">Reset scene</button>
-            <a class="next-button" href="/groups">Next scenario <span aria-hidden="true">→</span></a>
+            <a class="next-button" href="%BASE_URL%groups/">Next scenario <span aria-hidden="true">→</span></a>
           </div>
         </footer>
       </main>
     </div>
-    <script type="module" src="./recap.js"></script>
+    <script type="module" src="/scenarios/recap/recap.js"></script>
   </body>
 </html>

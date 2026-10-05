@@ -1,0 +1,60 @@
+name: Deploy Kafka Flow Lab
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build static site
+        run: npm run build -- --base=/kafka-flow-lab/
+
+      - name: Create GitHub Pages routes
+        shell: bash
+        run: |
+          output_dir=prototype/catawiki-dispute-simulator/dist
+          for scenario in recap groups broker-failure retries-dlq offsets-idempotency schema-evolution; do
+            mkdir -p "$output_dir/$scenario"
+            cp "$output_dir/$scenario.html" "$output_dir/$scenario/index.html"
+          done
+          cp "$output_dir/recap.html" "$output_dir/index.html"
+          touch "$output_dir/.nojekyll"
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: prototype/catawiki-dispute-simulator/dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
