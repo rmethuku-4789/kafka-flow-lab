@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/recap-2.css" />
+  <link rel="stylesheet" href="/recap.css" />
   <link rel="stylesheet" href="/groups.css" />
   <link rel="stylesheet" href="/broker-failure.css" />
 </head>
@@ -15,7 +15,14 @@
 <div class="app-shell">
   <header class="page-header">
     <div class="title-block"><p class="eyebrow">DISPUTE EVENTS · FINANCE PROCESSING</p><h1>When a broker <span>fails.</span></h1></div>
-    <label class="scenario-picker"><span class="sr-only">Choose a Kafka scenario</span><select id="scenario-select"><option value="/recap">01 · Recap</option><option value="/partitions">02 · Partitions</option><option value="/groups">03 · Consumer groups</option><option value="/retries-dlq">12 · Retries & DLQ</option><option value="/offsets-idempotency">13 · Offsets & idempotency</option><option value="/schema-evolution">14 · Schema evolution</option><option value="/broker-failure" selected>15 · Broker failure</option></select><span class="select-chevron" aria-hidden="true">⌄</span></label>
+    <label class="scenario-picker"><span class="sr-only">Choose a Kafka scenario</span><select id="scenario-select">
+            <option value="/recap">01 · Recap</option>
+            <option value="/groups">02 · Consumer groups</option>
+            <option value="/broker-failure" selected>03 · Broker failure</option>
+            <option value="/retries-dlq">04 · Retries & DLQ</option>
+            <option value="/offsets-idempotency">05 · Offsets & idempotency</option>
+            <option value="/schema-evolution">06 · Schema evolution</option>
+          </select><span class="select-chevron" aria-hidden="true">⌄</span></label>
   </header>
   <main class="stage" aria-label="Kafka broker failure scenario">
     <div class="stage-label"><span>15</span><strong id="scene-heading">ONE BROKER</strong><small id="scene-counter">1 / 3</small></div>

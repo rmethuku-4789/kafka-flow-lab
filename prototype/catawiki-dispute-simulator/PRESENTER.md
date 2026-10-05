@@ -1,13 +1,14 @@
 # Presenter runbook
 
-This dependency-free simulator uses synthetic teaching data only.
+Use `npm run dev`, then open `http://127.0.0.1:4177/recap`. These pages use synthetic teaching data, not a running Kafka cluster.
 
-| PPT moment | Simulator action |
+| Scenario | URL |
 | --- | --- |
-| Prior-session recap and agenda | Open at scene 1 prompt. |
-| Agenda slide | Advance through scenes 1–3. |
-| Act: make publishing safe | Reveal scene 4. |
-| Act: process reliably | Advance through scenes 5–7. |
-| Act: recover and look back | Reveal scene 8, then return to PPT quiz. |
+| Recap | `/recap` |
+| Consumer groups | `/groups` |
+| Broker failure | `/broker-failure` |
+| Retries & DLQ | `/retries-dlq` |
+| Offsets & idempotency | `/offsets-idempotency` |
+| Schema evolution | `/schema-evolution` |
 
-Timing: scenes 1–3 (14 min), scene 4 (8 min), scenes 5–7 (22 min), scene 8 (8 min), with 8 minutes for framing and quiz. Right/Space advances, Left goes back, R replays the current scene, and Shift+R restarts the story.
+Use the scenario dropdown to switch pages and the bottom controls to pause, adjust speed, replay, or advance. Present each topic as question → audience discussion → simulator → takeaways.

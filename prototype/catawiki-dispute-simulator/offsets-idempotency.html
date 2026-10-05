@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/recap-2.css" />
+    <link rel="stylesheet" href="/recap.css" />
     <link rel="stylesheet" href="/groups.css" />
     <link rel="stylesheet" href="/continuation-lessons.css" />
   </head>
@@ -23,17 +23,12 @@
           <span class="sr-only">Choose a Kafka scenario</span>
           <select id="scenario-select">
             <option value="/recap">01 · Recap</option>
-            <option value="/partitions">02 · Partitions</option>
-            <option value="/groups">03 · Consumer groups</option>
-            <option value="/durability">04 · Broker failure</option>
-            <option value="/progress">05 · Offsets</option>
-            <option value="/retry">06 · Retries</option>
-            <option value="/dlq">07 · Dead-letter queue</option>
-            <option value="/idempotency">08 · Idempotency</option>
-            <option value="/history">09 · Event history</option>
-            <option value="/ordering">10 · Ordering</option>
-            <option value="/schemas">11 · Schemas</option>
-          <option value="/retries-dlq">12 · Retries & DLQ</option><option value="/offsets-idempotency" selected>13 · Offsets & idempotency</option><option value="/schema-evolution">14 · Schema evolution</option></select>
+            <option value="/groups">02 · Consumer groups</option>
+            <option value="/broker-failure">03 · Broker failure</option>
+            <option value="/retries-dlq">04 · Retries & DLQ</option>
+            <option value="/offsets-idempotency" selected>05 · Offsets & idempotency</option>
+            <option value="/schema-evolution">06 · Schema evolution</option>
+          </select>
           <span class="select-chevron" aria-hidden="true">⌄</span>
         </label>
       </header>
