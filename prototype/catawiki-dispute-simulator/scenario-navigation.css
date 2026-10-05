@@ -1,0 +1,50 @@
+body.presentation-mode .topbar,
+body.presentation-mode .lesson-footer,
+body.presentation-mode .page-footer { display: none; }
+
+body.presentation-mode .intro-aside,
+body.presentation-mode .simulation-note,
+body.presentation-mode .ordering-note,
+body.presentation-mode .schema-explanation { display: none; }
+
+.scenario-picker {
+  max-width: 190px;
+  padding: 6px 26px 6px 9px;
+  border: 1px solid #d7dee6;
+  border-radius: 20px;
+  background: #fff;
+  color: #34435a;
+  font: 700 9px "DM Sans", sans-serif;
+}
+
+.scenario-picker:focus-visible { outline: 2px solid #2d6fec; outline-offset: 2px; }
+
+body.presentation-mode :is(.lesson-packet, .ordering-packet, .durability-packet, .travel-packet, .schema-packet, .event-packet) {
+  width: 14px;
+  height: 14px;
+  min-width: 14px;
+  padding: 0;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #3978e8;
+  box-shadow: 0 0 0 2px #3978e830;
+}
+
+body.presentation-mode :is(.lesson-packet, .ordering-packet, .durability-packet, .travel-packet, .schema-packet, .event-packet) > * { display: none; }
+body.presentation-mode [data-kind="commit"] { background: #8155c9; box-shadow: 0 0 0 2px #8155c930; }
+body.presentation-mode [data-kind="ack"] { background: #10957b; box-shadow: 0 0 0 2px #10957b30; }
+body.presentation-mode [data-kind="resolved"] { background: #d86827; box-shadow: 0 0 0 2px #d8682730; }
+body.presentation-mode [data-kind="error"] { background: #d33f46; box-shadow: 0 0 0 2px #d33f4630; }
+body.presentation-mode .connections path { stroke-linejoin: miter; }
+body.presentation-mode .connections > g > path { fill: none; marker-start: none; marker-end: var(--flow-arrow); stroke-linecap: round; }
+body.presentation-mode .connections > g > path.is-active { opacity: 1; stroke: #3978e8; stroke-width: 2; }
+body.presentation-mode .connections > g > path[data-direction="reverse"] { marker-start: var(--flow-arrow); marker-end: none; }
+body.presentation-mode .connections > g > path.is-active[data-kind="commit"] { stroke: #8155c9; filter: none; }
+body.presentation-mode .connections > g > path.is-active[data-kind="ack"] { stroke: #10957b; filter: none; }
+body.presentation-mode .connections > g > path.is-active[data-kind="resolved"] { stroke: #d86827; filter: none; }
+body.presentation-mode .connections > g > path.is-active[data-kind="schema"] { stroke: #8155c9; filter: none; }
+body.presentation-mode .connections > g > path.is-active[data-kind="error"] { stroke: #d33f46; filter: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .scenario-picker { transition: none; }
+}

@@ -1,0 +1,144 @@
+body.recap2-scenario{min-width:1080px;width:100%;height:100vh;height:100svh;overflow:hidden;background:radial-gradient(ellipse at 45% -20%,#fff 0,#f3f5f7 52%,#edf1f4 100%)}
+body.recap2-scenario .app-shell{width:100%;max-width:none;height:100%;min-height:0;margin:0;padding:0 clamp(20px,2.65vw,52px) clamp(10px,1.5vh,20px);gap:clamp(12px,1.6vh,20px)}
+html body.presentation-mode.recap2-scenario .app-shell{width:100vw!important;max-width:none!important;margin:0!important;padding-inline:clamp(20px,2.65vw,52px)!important}
+body.recap2-scenario .topbar,body.recap2-scenario .intro-aside,body.recap2-scenario .page-footer,body.recap2-scenario .simulation-note{display:none!important}
+body.recap2-scenario .intro{flex:none;height:clamp(92px,12vh,126px);align-items:center;padding:8px 0 0;gap:28px}
+body.recap2-scenario .intro-copy{max-width:none;min-width:0}
+body.recap2-scenario .eyebrow{margin:0 0 9px;font-size:clamp(9px,.58vw,11px);letter-spacing:.17em}
+body.recap2-scenario .intro h1{font:800 clamp(32px,2.65vw,52px)/1.06 Manrope,"DM Sans",sans-serif;letter-spacing:-.055em;white-space:nowrap}
+body.recap2-scenario .scenario-picker{position:relative;flex:none;max-width:none;padding:10px 32px 10px 14px;border-radius:22px;font:700 12px "DM Sans",sans-serif}
+body.recap2-scenario .simulation{flex:1;min-height:0;display:flex;flex-direction:column;gap:clamp(8px,1vh,12px);padding:clamp(14px,1.35vw,22px);border:1px solid #dce2e8;border-radius:20px;background:rgba(255,255,255,.83);box-shadow:0 10px 34px rgba(25,44,72,.045)}
+html body.presentation-mode.recap2-scenario .simulation{width:100%;max-width:none!important;margin:0!important}
+body.recap2-scenario .stage-heading{order:1;flex:none;min-height:24px;color:#62728a;font-size:clamp(10px,.65vw,12px);letter-spacing:.13em}
+body.recap2-scenario .stage-heading .ordering-controls{order:initial;min-height:0;margin:0;padding:0;gap:7px}
+body.recap2-scenario .partition-header-controls{display:flex;align-items:center;gap:7px;white-space:nowrap}
+body.recap2-scenario .partition-header-controls .scenario-button,body.recap2-scenario .partition-header-controls .play-button{height:34px;min-height:34px;padding:0 10px;border:1px solid #d7e0e9;border-radius:8px;background:#fff;color:#34435a;font-size:10px;font-weight:700;cursor:pointer}
+body.recap2-scenario .partition-header-controls .play-button{background:#182a42;color:#fff}
+body.recap2-scenario .partition-step-label,body.recap2-scenario .group-step-label{font:700 9px "DM Mono",monospace;letter-spacing:.06em;white-space:nowrap}
+body.recap2-scenario .jump-label{margin-left:4px;color:#8995a2;font-size:8px;font-weight:800;letter-spacing:.1em}
+body.recap2-scenario .partition-header-controls [aria-pressed=true]{border-color:#b9cef5;background:#edf3fc;color:#2d6fec}
+body.recap2-scenario .groups-controls{justify-content:center;gap:8px}
+body.recap2-scenario .groups-controls .scenario-button,body.recap2-scenario .groups-controls .play-button{height:34px;min-height:34px;padding:0 10px;border:1px solid #d7e0e9;border-radius:8px;font-size:10px}
+body.recap2-scenario .groups-controls .play-button{background:#182a42;color:#fff}
+body.recap2-scenario .group-metrics{display:flex;align-items:center;gap:6px}
+body.presentation-mode.recap2-scenario .ordering-explanation,body.presentation-mode.recap2-scenario .groups-explanation{order:2;flex:none;display:block!important;margin:0;padding:0;border:0;background:none;color:#596a80;font-size:13px;line-height:1.35}
+body.recap2-scenario .ordering-explanation .note-symbol,body.recap2-scenario .groups-audience-label{display:none}
+body.recap2-scenario .ordering-explanation p{margin:0;color:#506078;font-size:clamp(12px,.78vw,15px);line-height:1.35}
+body.recap2-scenario .flow-stage{order:3;flex:1;min-height:0;grid-template-columns:minmax(240px,.9fr) minmax(410px,1.3fr) minmax(300px,1.12fr);align-items:center;gap:clamp(32px,5vw,96px);padding:clamp(12px,2.4vh,21px) 4px clamp(2px,.2vh,4px)}
+body.recap2-scenario .connections{z-index:2;overflow:visible}
+body.recap2-scenario .connection-path,body.recap2-scenario .ordering-path{fill:none;stroke:#aeb9c8;stroke-width:2.2;stroke-dasharray:none;opacity:.72;vector-effect:non-scaling-stroke;transition:stroke .2s,stroke-width .2s,opacity .2s}
+body.recap2-scenario .ordering-path.is-static{opacity:.72}
+body.recap2-scenario .ordering-path.is-active{stroke:#2d6fec;stroke-width:3.2;opacity:1;filter:drop-shadow(0 0 3px rgba(45,111,236,.24))}
+body.recap2-scenario .ordering-producer,body.recap2-scenario .groups-producer{min-height:clamp(230px,31vh,300px);padding:clamp(18px,1.55vw,28px);display:flex;flex-direction:column;justify-content:center;gap:clamp(12px,1.8vh,20px);border-radius:15px;background:rgba(255,255,255,.97);box-shadow:0 4px 16px rgba(28,47,75,.045)}
+body.recap2-scenario .ordering-broker,body.recap2-scenario .groups-broker{min-width:0;padding:clamp(16px,1vw,19px);display:flex;flex-direction:column;gap:clamp(7px,.8vh,9px);border-radius:15px;background:rgba(255,255,255,.97);box-shadow:0 4px 16px rgba(28,47,75,.045)}
+body.recap2-scenario .ordering-broker h2,body.recap2-scenario .groups-broker h2{font:700 clamp(23px,1.35vw,26px) Manrope,"DM Sans",sans-serif;letter-spacing:-.035em}
+body.recap2-scenario .partitions-topic-boundary,body.recap2-scenario .groups-topic-boundary{padding:8px;border:1px solid #dae2ea;border-radius:11px;background:#fff}
+body.recap2-scenario .partitions-topic-boundary .topic-label,body.recap2-scenario .groups-topic-boundary .topic-label{min-height:36px;margin:0 0 7px;padding:0 11px;border-radius:7px;background:#f1f3f6;font:500 clamp(12px,.88vw,17px) "DM Mono",monospace}
+body.recap2-scenario .schema-partitions{display:grid;gap:7px;padding:0}
+body.recap2-scenario .schema-partitions .partition-row{min-height:48px;grid-template-columns:32px minmax(0,1fr) 54px;gap:10px;padding:6px 9px;border:1px solid #b6dfd4;border-radius:8px;background:#f1faf7}
+body.recap2-scenario .schema-partitions .partition-name{color:#2d6fec;font:500 14px "DM Mono",monospace}
+body.recap2-scenario .schema-partitions .partition-track{height:30px;gap:5px}
+body.recap2-scenario .partition-count,body.recap2-scenario .control-kind{font:500 10px "DM Mono",monospace}
+body.recap2-scenario .partitions-consumer-column,body.recap2-scenario .groups-consumers{min-width:0;min-height:0;height:auto;align-self:center;display:flex;flex-direction:column;gap:7px}
+body.recap2-scenario .consumer-column-head{margin:0;padding:0 1px 2px}
+body.recap2-scenario .partitions-consumer-card,body.recap2-scenario .groups-small-group,body.recap2-scenario .groups-finance-group{flex:none;min-height:125px;padding:10px 12px;opacity:1;border-radius:12px;background:rgba(255,255,255,.97);box-shadow:0 4px 16px rgba(28,47,75,.045)}
+body.recap2-scenario .groups-consumers .groups-small-group{min-height:96px;padding:8px 10px}
+body.recap2-scenario .groups-consumers .groups-finance-group{min-height:0;padding:8px 10px}
+body.recap2-scenario .groups-consumers .groups-finance-group .consumer-main{gap:6px}
+body.recap2-scenario .groups-consumers .groups-finance-group .group-capacity{gap:3px;margin:4px 0 0 32px}
+body.recap2-scenario .groups-consumers .groups-finance-group .finance-members-frame{margin:4px 0 0 32px;padding:3px}
+body.recap2-scenario .groups-consumers .groups-finance-group .group-member-list{gap:4px;margin:3px 0 0}
+body.recap2-scenario .groups-consumers .groups-finance-group .group-member{min-height:38px;padding:5px 6px}
+body.recap2-scenario .groups-consumers .groups-finance-group .group-lag{margin:3px 0 0 32px;padding-top:3px}
+body.recap2-scenario .partitions-consumer-card .consumer-title h3,body.recap2-scenario .groups-consumers .consumer-title h3{font:700 clamp(16px,1.2vw,23px) Manrope,"DM Sans",sans-serif;letter-spacing:-.025em}
+body.recap2-scenario .partitions-consumer-card .consumer-title p,body.recap2-scenario .groups-consumers .consumer-title p{font-size:11px}
+body.recap2-scenario .delivery-indicator{padding:5px 7px;font:500 9px "DM Mono",monospace}
+body.recap2-scenario .consumer-progress,body.recap2-scenario .read-order{font:400 clamp(11px,.76vw,14.6px) "DM Mono",monospace}
+body.recap2-scenario .ordering-controls{order:4;flex:none;min-height:42px;margin:0;padding:0;display:flex;align-items:center;justify-content:space-between;gap:10px}
+body.recap2-scenario .playback-controls{order:4;flex:none;min-height:54px;margin:0;padding:0 2px;border:0;display:flex;align-items:center;justify-content:space-between;gap:14px}
+body.recap2-scenario .playback-controls .scenario-button,body.recap2-scenario .playback-controls .play-button{min-height:42px;padding:0 16px;border:1px solid #d7e0e9;border-radius:9px;background:#fff;color:#34435a;font-size:12px;font-weight:700}
+body.recap2-scenario .playback-controls .play-button{background:#182a42;color:#fff}
+body.recap2-scenario .playback-controls .pace-control,body.recap2-scenario .groups-speed-control{display:grid;grid-template-columns:auto minmax(120px,180px) auto;align-items:center;gap:2px 10px;padding:0 8px;color:#56667a;font-size:11px;font-weight:700}
+body.recap2-scenario .playback-controls input[type=range]{width:100%;accent-color:#2d6fec}
+body.recap2-scenario .playback-controls .pace-range-labels,body.recap2-scenario .groups-speed-control small{grid-column:2;display:flex;justify-content:space-between;color:#8491a0;font-size:8px}
+body.recap2-scenario .playback-controls output{color:#34435a;font:700 11px "DM Mono",monospace}
+body.recap2-scenario #partition-playback-status,body.recap2-scenario #group-playback-status{color:#8190a2;font-size:10px;font-weight:800;letter-spacing:.08em}
+body.recap2-scenario .ordering-producer .service-title{margin:8px 0}
+body.recap2-scenario .ordering-producer .order-key-card{margin:0;padding:9px 10px}
+body.recap2-scenario .ordering-producer .order-event-list{gap:5px}
+body.recap2-scenario .ordering-producer .producer-foot{padding-top:4px}
+body.recap2-scenario .ordering-packet,body.recap2-scenario .groups-packet{z-index:4;width:13px;height:13px;display:block;padding:0;border:0;border-radius:50%;background:transparent;box-shadow:none;color:transparent;pointer-events:none}
+body.recap2-scenario .ordering-packet>span,body.recap2-scenario .groups-packet>span{position:absolute;inset:0;width:13px;height:13px;border:2px solid #fff;border-radius:50%;background:#2d6fec;box-shadow:0 1px 5px #15223840}
+body.recap2-scenario .ordering-packet>b,body.recap2-scenario .groups-packet>b{position:absolute;left:50%;bottom:calc(100% + 3px);display:block;transform:translateX(-50%);padding:2px 4px;border:1px solid #dce3eb;border-radius:5px;background:#fff;color:#52627a;font:500 8px "DM Mono",monospace;white-space:nowrap;box-shadow:0 1px 4px #15223812}
+body.recap2-scenario .ordering-packet>small,body.recap2-scenario .groups-packet>small{display:none}
+body.recap2-scenario .simulation-note{display:none!important}
+@media(max-width:1280px){body.recap2-scenario .flow-stage{grid-template-columns:minmax(200px,.9fr) minmax(350px,1.3fr) minmax(270px,1.12fr);gap:clamp(20px,3vw,48px)}body.recap2-scenario .stage-heading{gap:8px}body.recap2-scenario .partition-header-controls{gap:4px}body.recap2-scenario .playback-controls{gap:8px}}
+@media(max-width:1080px){body.recap2-scenario{overflow:auto}body.recap2-scenario .app-shell{height:auto;min-height:100svh}body.recap2-scenario .simulation{min-height:calc(100svh - 140px)}body.recap2-scenario .flow-stage{grid-template-columns:1fr;gap:14px;min-height:0}body.recap2-scenario .ordering-producer,body.recap2-scenario .ordering-broker,body.recap2-scenario .groups-producer,body.recap2-scenario .groups-broker{min-height:0}}
+@media(prefers-reduced-motion:reduce){body.recap2-scenario *{scroll-behavior:auto!important}}
+html body.presentation-mode.recap2-scenario .flow-stage{grid-template-columns:minmax(0,.9fr) minmax(0,1.3fr) minmax(0,1.12fr)!important;gap:clamp(32px,5vw,96px)!important}
+html body.presentation-mode.recap2-scenario .groups-small-group .consumer-main{height:34px;min-height:0;gap:6px}
+html body.presentation-mode.recap2-scenario .groups-small-group .consumer-title h3{font-size:clamp(16px,1.05vw,20px)}
+html body.presentation-mode.recap2-scenario .groups-small-group .consumer-title p{font-size:10px}
+html body.presentation-mode.recap2-scenario .groups-small-group .consumer-progress{height:17px;min-height:0;margin:2px 0 0 32px;padding:0}
+html body.presentation-mode.recap2-scenario .groups-small-group .group-lag{height:16px;min-height:0;margin:2px 0 0 32px;padding:2px 0;line-height:12px}
+html body.presentation-mode.recap2-scenario .groups-finance-group .consumer-main{height:34px;min-height:0;gap:6px}
+html body.presentation-mode.recap2-scenario .groups-finance-group .consumer-progress{height:17px;min-height:0;margin:2px 0 0 32px;padding:0}
+html body.presentation-mode.recap2-scenario .groups-finance-group .group-member{min-height:32px;padding:4px 5px;line-height:1.1}
+html body.presentation-mode.recap2-scenario .finance-members-frame .group-member small{overflow:visible;overflow-wrap:anywhere;text-overflow:clip;white-space:normal;font-size:9px;line-height:1.15}
+html body.presentation-mode.recap2-scenario .groups-finance-group .group-duplicate-note{margin:3px 0 0 32px;padding:4px 6px;gap:2px}
+html body.presentation-mode.recap2-scenario .groups-finance-group .group-duplicate-note b{font-size:10px}
+html body.presentation-mode.recap2-scenario .groups-finance-group .group-duplicate-note span{font-size:10px;line-height:1.2}
+html body.presentation-mode.recap2-scenario .groups-finance-group .group-lag{height:16px;min-height:0;margin:2px 0 0 32px;padding:2px 0;line-height:12px}
+body.recap2-scenario .groups-controls .scenario-button,body.recap2-scenario .groups-controls .play-button{font-size:11px}
+body.recap2-scenario .group-step-label{font-size:11px}
+body.recap2-scenario .groups-consumers .consumer-column-head{min-height:20px;display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:8px}
+body.recap2-scenario .groups-consumers .consumer-column-head .group-note{font-size:11px;white-space:nowrap}
+body.recap2-scenario .groups-consumers .groups-small-group{min-height:108px;padding:10px 12px}
+body.recap2-scenario .groups-consumers .groups-finance-group{padding:10px 12px;gap:5px}
+body.recap2-scenario .groups-consumers .consumer-main{height:auto;min-height:44px;align-items:center;gap:9px}
+body.recap2-scenario .groups-consumers .consumer-title h3{font-size:clamp(19px,1.2vw,23px)}
+body.recap2-scenario .groups-consumers .consumer-title p{font-size:13px}
+body.recap2-scenario .groups-consumers .delivery-indicator{font-size:11px;white-space:nowrap}
+body.recap2-scenario .groups-consumers .groups-small-group .consumer-progress,body.recap2-scenario .groups-consumers .groups-finance-group .consumer-progress{height:auto;min-height:20px;margin:3px 0 0 42px;line-height:1.25}
+body.recap2-scenario .groups-consumers .groups-small-group .group-tag,body.recap2-scenario .groups-consumers .groups-finance-group .group-tag{font-size:11px;line-height:1.25}
+body.recap2-scenario .groups-consumers .groups-finance-group .group-capacity{gap:4px;margin:4px 0 0 42px}
+body.recap2-scenario .groups-consumers .groups-finance-group .group-capacity span{font-size:10px}
+body.recap2-scenario .groups-consumers .groups-finance-group .group-capacity b{font-size:11px}
+body.recap2-scenario .groups-consumers .groups-finance-group .finance-members-frame{margin:4px 0 0 42px;padding:4px}
+body.recap2-scenario .groups-consumers .finance-members-frame .group-member-list{grid-template-columns:minmax(0,1fr);gap:4px;margin:0}
+body.recap2-scenario .groups-consumers .finance-members-frame .group-member{min-height:36px;padding:5px 8px;gap:3px;font-size:11px;line-height:1.15}
+body.recap2-scenario .groups-consumers .finance-members-frame .group-member small{font-size:10px;line-height:1.15;overflow-wrap:anywhere;white-space:normal}
+body.recap2-scenario .groups-consumers .finance-group-id{margin:0 0 4px;font-size:10px;line-height:1.2}
+body.recap2-scenario .groups-consumers .groups-finance-group .group-duplicate-note{margin:4px 0 0 42px;padding:5px 7px;gap:2px}
+body.recap2-scenario .groups-consumers .groups-finance-group .group-duplicate-note b{font-size:10px;line-height:1.2}
+body.recap2-scenario .groups-consumers .groups-finance-group .group-duplicate-note span{font-size:10px;line-height:1.2}
+body.recap2-scenario .groups-consumers .groups-finance-group .group-lag{height:auto;min-height:22px;margin:4px 0 0 42px;padding:5px 0;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10px;line-height:1.2;white-space:nowrap}
+body.recap2-scenario .groups-consumers .groups-finance-group .group-lag b{font-size:11px;line-height:1.2}
+body.recap2-scenario .groups-speed-control>span{white-space:nowrap}
+body.recap2-scenario .playback-controls .groups-speed-control{grid-template-columns:auto minmax(140px,180px) auto}
+@media(max-height:820px){body.recap2-scenario .groups-consumers .groups-small-group{min-height:98px;padding:8px 10px}body.recap2-scenario .groups-consumers .groups-finance-group{padding:8px 10px;gap:3px}body.recap2-scenario .groups-consumers .finance-members-frame .group-member{min-height:32px;padding:4px 7px}body.recap2-scenario .groups-consumers .groups-finance-group .group-lag{min-height:20px;padding:3px 0}}
+html body.groups-page.presentation-mode.recap2-scenario .groups-consumers .consumer-column-head{grid-template-columns:max-content max-content!important;grid-template-rows:auto!important;align-items:center;justify-content:space-between;min-height:20px}
+html body.groups-page.presentation-mode.recap2-scenario .groups-consumers .consumer-column-head .group-note{width:auto;white-space:nowrap}
+html body.groups-page.presentation-mode.recap2-scenario #finance-work-state{font-size:11px!important;line-height:1.2;letter-spacing:.02em}
+html body.groups-page.presentation-mode.recap2-scenario .groups-finance-group .group-lag{height:auto!important;min-height:24px!important;width:auto!important;max-width:none!important;margin:4px 0 0 42px;padding:4px 8px!important;display:flex;align-items:center;justify-content:space-between;align-self:stretch!important;gap:8px;line-height:1.2;white-space:nowrap}
+html body.groups-page.presentation-mode.recap2-scenario .groups-finance-group .group-lag span{flex:1 1 auto;font-size:11px!important;line-height:1.2;white-space:nowrap}
+html body.groups-page.presentation-mode.recap2-scenario .groups-finance-group .group-lag b{flex:0 0 auto;font-size:11px!important;line-height:1.2;padding:3px 8px}
+html body.groups-page.presentation-mode.recap2-scenario .finance-members-frame .group-member small{font-size:10px!important;line-height:1.2}
+body.recap2-scenario .partitions-consumer-column{display:flex;flex-direction:column;gap:7px}
+body.recap2-scenario .partitions-consumer-column .partitions-consumer-card{align-self:stretch;width:100%;height:152px;min-height:152px;flex:0 0 152px;box-sizing:border-box}
+body.groups-page.recap2-scenario .groups-small-group{height:115px;min-height:115px;flex:0 0 115px;box-sizing:border-box}
+body.groups-page.recap2-scenario .groups-finance-group{height:250px;min-height:250px;flex:0 0 250px;box-sizing:border-box}
+body.groups-page.recap2-scenario .groups-consumers{gap:3px}
+html body.groups-page.presentation-mode.recap2-scenario .finance-members-frame .group-member{min-height:18px!important;padding:1px 6px!important;line-height:1.1}
+html body.groups-page.presentation-mode.recap2-scenario .finance-members-frame .group-member-list{gap:2px}
+html body.groups-page.presentation-mode.recap2-scenario .groups-finance-group .group-lag{height:18px!important;min-height:18px!important;margin:2px 0 0 42px!important;padding:1px 8px!important}
+html body.groups-page.presentation-mode.recap2-scenario .groups-finance-group .group-lag b{padding:1px 6px}
+html body:is(.groups-page,.partitions-page).presentation-mode.recap2-scenario .playback-controls{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px}
+html body:is(.groups-page,.partitions-page).presentation-mode.recap2-scenario .scenario-step-controls{display:flex;flex:0 1 auto;align-items:center;gap:clamp(4px,.45vw,8px);min-width:0;margin:0;white-space:nowrap}
+html body:is(.groups-page,.partitions-page).presentation-mode.recap2-scenario .scenario-step-controls .scenario-button,html body:is(.groups-page,.partitions-page).presentation-mode.recap2-scenario .scenario-step-controls .play-button{height:40px;min-height:40px;padding:0 12px;font-size:clamp(10px,.64vw,12px);white-space:nowrap}
+html body:is(.groups-page,.partitions-page).presentation-mode.recap2-scenario .scenario-step-controls .partition-step-label,html body:is(.groups-page,.partitions-page).presentation-mode.recap2-scenario .scenario-step-controls .group-step-label{font-size:clamp(9px,.56vw,11px)}
+html body:is(.groups-page,.partitions-page).presentation-mode.recap2-scenario .partition-playback-controls .pace-control{flex:0 1 clamp(180px,15vw,280px)}
+html body.partitions-page.presentation-mode.recap2-scenario .partition-playback-controls .pace-control{grid-template-columns:minmax(0,1fr)}
+html body.partitions-page.presentation-mode.recap2-scenario .partition-playback-controls .pace-range-labels{grid-column:1}
+html body:is(.groups-page,.partitions-page).presentation-mode.recap2-scenario #partition-playback-status,html body:is(.groups-page,.partitions-page).presentation-mode.recap2-scenario #group-playback-status{flex:0 1 110px;text-align:center}
+@media(max-width:1500px){html body:is(.groups-page,.partitions-page).presentation-mode.recap2-scenario .scenario-step-controls{flex:1 1 100%;justify-content:flex-start}html body:is(.groups-page,.partitions-page).presentation-mode.recap2-scenario .playback-controls{justify-content:space-between}}

@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite prototype/catawiki-dispute-simulator --host 0.0.0.0",
-    "build": "vite build prototype/catawiki-dispute-simulator"
+    "dev": "vite prototype/catawiki-dispute-simulator --config vite.config.js --host 0.0.0.0 --port 4177 --strictPort",
+    "build": "vite build prototype/catawiki-dispute-simulator --config vite.config.js"
   },
   "dependencies": {
     "motion": "13.2.0",

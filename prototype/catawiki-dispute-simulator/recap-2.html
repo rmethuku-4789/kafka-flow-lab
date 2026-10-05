@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f2f4f6" />
+    <title>Kafka Flow Lab · Recap 2</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./recap-2.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="page-header">
+        <div class="title-block">
+          <p class="eyebrow">THE DISPUTE EVENT · A RECAP</p>
+          <h1>One dispute. <span>Three independent reactions.</span></h1>
+        </div>
+        <label class="scenario-picker">
+          <span class="sr-only">Choose a Kafka scenario</span>
+          <select id="scenario-select">
+            <option value="/recap" selected>01 · Recap</option>
+            <option value="/partitions">02 · Partitions</option>
+            <option value="/groups">03 · Consumer groups</option>
+            <option value="/durability">04 · Broker failure</option>
+            <option value="/progress">05 · Offsets</option>
+            <option value="/retry">06 · Retries</option>
+            <option value="/dlq">07 · Dead-letter queue</option>
+            <option value="/idempotency">08 · Idempotency</option>
+            <option value="/history">09 · Event history</option>
+            <option value="/ordering">10 · Ordering</option>
+            <option value="/schemas">11 · Schemas</option>
+          </select>
+          <span class="select-chevron" aria-hidden="true">⌄</span>
+        </label>
+      </header>
+
+      <main class="stage" aria-label="Kafka event flow simulator">
+        <div class="stage-label"><span>01</span> THE EVENT'S JOURNEY</div>
+
+        <div class="flow-field" id="flow-field">
+          <svg class="connections" id="connections" aria-hidden="true">
+            <g id="connection-paths"></g>
+          </svg>
+
+          <article class="node producer-card" id="producer-card">
+            <div class="node-kicker"><span class="role-dot producer-dot"></span> PRODUCER <span class="state-label" id="producer-status">READY</span></div>
+            <div class="node-title">
+              <span class="service-icon producer-icon" aria-hidden="true">↗</span>
+              <div><h2>cw-customer-info</h2><p>Dispute created</p></div>
+            </div>
+            <div class="event-card" id="producer-event">
+              <span class="event-icon" aria-hidden="true">↗</span>
+              <div><strong>created</strong><small>Dispute event</small></div>
+            </div>
+            <p class="producer-note"><span></span>Does not wait for consumers</p>
+          </article>
+
+          <section class="node cluster-card" id="cluster-card" aria-label="Kafka broker, topic, partition, and group coordinator">
+            <div class="cluster-kicker"><span class="role-dot cluster-dot"></span> EVENT LOG <span class="state-label success-text" id="broker-status">READY</span></div>
+            <h2>Kafka <span>broker</span></h2>
+            <div class="topic-boundary" id="topic-boundary">
+              <div class="topic-heading"><strong>…_customer_info_disputes</strong><span>TOPIC</span></div>
+              <div class="partition-row" id="partition-row">
+                <strong class="partition-name">P0</strong>
+                <div class="record-window" id="record-window" aria-label="Recently appended records"></div>
+                <span class="record-count" id="record-count">0 records</span>
+              </div>
+              <p class="retention-note">LATEST 5 SHOWN · OLDER RECORDS FOLLOW TOPIC RETENTION</p>
+            </div>
+            <section class="coordinator" id="coordinator" aria-label="Group coordinator and committed offsets">
+              <div class="coordinator-heading"><strong>GROUP COORDINATOR · BROKER</strong><span id="coordinator-status" aria-live="polite">WAITING FOR CONSUMERS</span></div>
+              <div class="internal-topic"><strong>__consumer_offsets</strong><span>COMPACTED INTERNAL TOPIC</span></div>
+              <div class="offset-grid">
+                <div><span>orders</span><strong id="orders-group-offset">P0 · NEXT 0</strong></div>
+                <div><span>finance</span><strong id="finance-group-offset">P0 · NEXT 0</strong></div>
+                <div><span>message-center</span><strong id="message-group-offset">P0 · NEXT 0</strong></div>
+              </div>
+            </section>
+            <p class="leader-note"><span aria-hidden="true">◉</span> P0 partition leader · one ordered log</p>
+          </section>
+
+          <section class="consumer-column" aria-label="Independent consumer groups">
+            <div class="consumer-column-heading"><span><span class="role-dot consumer-dot"></span> CONSUMERS</span><strong>3 SEPARATE GROUPS</strong></div>
+            <article class="node consumer-card" id="orders-card" data-consumer="orders">
+              <div class="consumer-heading">
+                <span class="service-icon orders-icon" aria-hidden="true">✓</span>
+                <h3>cw-orders</h3>
+                <span class="delivery-indicator" id="orders-status">WAITING</span>
+              </div>
+              <div class="consumer-meta"><span>GROUP · …_orders_karafka</span><strong id="orders-next">P0 · NEXT 0</strong></div>
+              <div class="work-result"><span class="work-icon" aria-hidden="true">✓</span><strong>show claim open banner</strong></div>
+              <div class="processing-progress" aria-hidden="true"><span class="progress-track"></span><span class="progress-fill"></span><i class="progress-thumb"></i></div>
+            </article>
+            <article class="node consumer-card" id="finance-card" data-consumer="finance">
+              <div class="consumer-heading">
+                <span class="service-icon finance-icon" aria-hidden="true">¤</span>
+                <h3>cw-finance</h3>
+                <span class="delivery-indicator" id="finance-status">WAITING</span>
+              </div>
+              <div class="consumer-meta"><span>GROUP · …_finance_karafka</span><strong id="finance-next">P0 · NEXT 0</strong></div>
+              <div class="work-result"><span class="work-icon" aria-hidden="true">✓</span><strong>block payout</strong></div>
+              <div class="processing-progress" aria-hidden="true"><span class="progress-track"></span><span class="progress-fill"></span><i class="progress-thumb"></i></div>
+            </article>
+            <article class="node consumer-card" id="message-card" data-consumer="message">
+              <div class="consumer-heading">
+                <span class="service-icon message-icon" aria-hidden="true">●</span>
+                <div class="consumer-name"><h3>cw-message-center</h3><small>Eligible cases only</small></div>
+                <span class="delivery-indicator" id="message-status">WAITING</span>
+              </div>
+              <div class="consumer-meta"><span>GROUP · …_message_center_karafka</span><strong id="message-next">P0 · NEXT 0</strong></div>
+              <div class="work-result"><span class="work-icon" aria-hidden="true">✓</span><strong>create system message</strong></div>
+              <div class="processing-progress" aria-hidden="true"><span class="progress-track"></span><span class="progress-fill"></span><i class="progress-thumb"></i></div>
+            </article>
+          </section>
+        </div>
+
+        <footer class="playback-controls" aria-label="Recap animation controls">
+          <div class="playback-left">
+            <button class="pause-button" id="pause-button" type="button" aria-pressed="false">Ⅱ Pause</button>
+            <label class="speed-control" for="speed-control">
+              <span>Animation speed</span>
+              <input id="speed-control" type="range" min="0.25" max="1.5" step="0.05" value="0.5" aria-valuetext="0.5 times speed" />
+              <small><span>SLOWEST</span><span>FASTEST</span></small>
+              <output id="speed-output" for="speed-control">0.5×</output>
+            </label>
+          </div>
+          <div class="playback-right">
+            <span class="flow-state" id="flow-state"><i></i><span>LIVE</span></span>
+            <button class="reset-button" id="reset-button" type="button">Reset scene</button>
+            <a class="next-button" href="/partitions">Next scenario <span aria-hidden="true">→</span></a>
+          </div>
+        </footer>
+      </main>
+    </div>
+    <script type="module" src="./recap-2.js"></script>
+  </body>
+</html>

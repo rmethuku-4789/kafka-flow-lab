@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f3f5f7" />
+    <title>Kafka Flow Lab — Schema contracts</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script type="module" src="/scenario-navigation.js"></script>
+    <link rel="stylesheet" href="/schemas.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  </head>
+  <body class="schema-page">
+    <main class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="/recap" aria-label="Kafka Flow Lab recap"><span class="brand-mark"><i></i><i></i><i></i></span><span>KAFKA <b>FLOW LAB</b></span></a>
+        <div class="topbar-right"><a class="scenario-link" href="/ordering">NEXT · SCENARIO 03 ORDERING</a><span class="lesson-pill"><span></span> SCENARIO 02</span><span class="environment-tag">SIMULATED · NO BACKEND</span></div>
+      </header>
+
+      <section class="intro" aria-labelledby="page-title">
+        <div class="intro-copy"><p class="eyebrow">THE DISPUTE EVENT · SCHEMA CONTRACTS</p><h1 id="page-title">Kafka separates services.<br /><em>Who agrees on the event shape?</em></h1></div>
+        <div class="intro-aside"><span class="question-mark">?</span><p>Each service gets the same event. How does it know what the fields mean?</p><span class="answer-cue">FOLLOW THE CONTRACT <b>↓</b></span></div>
+      </section>
+
+      <section class="simulation schema-simulation" aria-label="Schema Registry and Kafka flow simulator">
+        <div class="stage-heading"><div><span class="stage-index">02</span><span>ONE EVENT · THREE CONSUMERS · ONE SHARED CONTRACT</span></div><div class="schema-badges"><span class="flow-kind">WRITER ID → READER CODE</span><span class="control-kind">SCHEMA CHECK · FIRST USE</span></div></div>
+
+        <div class="registry-band" id="registry-band">
+          <div class="registry-card" id="registry-card">
+            <div class="registry-icon" aria-hidden="true">SR</div>
+            <div class="registry-copy"><div class="registry-title"><span>CONFLUENT SCHEMA REGISTRY</span><span class="registry-state" id="registry-state">NO SCHEMA YET</span></div><h2>Shared event contract</h2><p>Avro · BACKWARD per subject · latest version only · auto-register demo</p></div>
+            <div class="registry-version" id="registry-version"><span>DEFAULT SUBJECT EXAMPLE</span><b>demo-disputes-value</b><small id="registry-id">Awaiting v1</small></div>
+          </div>
+          <div class="registry-routes" role="group" aria-label="Serializer and deserializer use of Schema Registry"><span class="registry-route producer-route">SERIALIZER · REGISTER SCHEMA → ID (FIRST USE)</span><span class="registry-route consumer-route">DESERIALIZER · ID REQUEST / SCHEMA RETURN · CACHED</span></div>
+        </div>
+
+        <div class="flow-stage schema-flow-stage" id="schema-stage">
+          <svg class="connections schema-connections" id="schema-connections" aria-hidden="true"><defs><linearGradient id="schema-gradient"><stop offset="0" stop-color="#7756c9"/><stop offset="1" stop-color="#2d6fec"/></linearGradient><marker id="schema-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 8 4 0 8Z" fill="context-stroke"/></marker></defs><g id="schema-paths"></g></svg>
+          <div class="schema-packet" id="schema-packet" aria-hidden="true"><span></span><b>schema v1</b></div>
+          <div class="event-packet" id="event-packet" aria-hidden="true"><span></span><b>evt-001</b><i>schema ID 101</i></div>
+
+          <article class="service-card producer-card schema-producer" id="schema-producer">
+            <div class="card-topline"><span class="role-label"><span class="role-dot producer-dot"></span> PRODUCER</span><span class="step-status" id="producer-state">READY</span></div>
+            <div class="service-title"><div class="service-icon customer-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/></svg></div><div><h2>cw-customer-info</h2><p>Builds and serializes the event</p></div></div>
+            <div class="contract-box"><div class="contract-head"><b>EVENT CONTRACT · V1</b><span>ILLUSTRATIVE</span></div><div class="contract-field"><code>status</code><small>string · required</small></div><div class="contract-meta"><span>Avro serializer</span><span id="producer-schema-id">No schema ID</span></div></div>
+            <div class="producer-foot"><span class="pulse-dot"></span><span id="producer-note">Proposes a schema version first</span></div>
+          </article>
+
+          <section class="broker-card schema-broker" id="schema-broker" aria-label="Kafka broker and topic partitions">
+            <div class="broker-header"><div><div class="card-topline"><span class="role-label"><span class="role-dot kafka-dot"></span> EVENT LOG</span><span class="broker-state" id="broker-state">EMPTY</span></div><h2>Kafka <span>broker</span></h2></div></div>
+            <div class="topic-label"><span class="topic-led"></span><span>demo-disputes</span><span class="topic-chip">DEMO</span></div>
+            <div class="partition-list schema-partitions">
+              <div class="partition-row" data-partition="P0"><span class="partition-name">P0</span><div class="partition-track"><span class="record-slot schema-record" id="schema-record-p0"><span class="record-stamp">0</span><b>event</b><i>schema ID 101</i></span></div><span class="partition-count" id="schema-count-p0">EMPTY</span></div>
+              <div class="partition-row" data-partition="P1"><span class="partition-name">P1</span><div class="partition-track"><span class="record-slot schema-record" id="schema-record-p1"><span class="record-stamp">0</span><b>event</b><i>schema ID 101</i></span></div><span class="partition-count" id="schema-count-p1">EMPTY</span></div>
+              <div class="partition-row" data-partition="P2"><span class="partition-name">P2</span><div class="partition-track"><span class="record-slot schema-record" id="schema-record-p2"><span class="record-stamp">0</span><b>event</b><i>schema ID 101</i></span></div><span class="partition-count" id="schema-count-p2">EMPTY</span></div>
+            </div>
+            <div class="broker-footer"><span class="retention-icon">↻</span><span>Stores bytes; this demo puts the schema ID in the value</span></div>
+          </section>
+
+          <section class="consumer-column schema-consumers" aria-label="Three independent consumers">
+          <div class="consumer-column-head"><span class="role-label"><span class="role-dot consumer-dot"></span> CONSUMERS</span><span class="group-note">EACH SERVICE'S READER VERSION</span></div>
+            <article class="service-card consumer-card schema-consumer" id="schema-orders">
+              <div class="consumer-main"><div class="service-icon orders-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 7 2 2 4-4"/><path d="m5 15 2 2 4-4"/><path d="M14 7h5M14 15h5"/><path d="M4 3.5h16v17H4z"/></svg></div><div class="consumer-title"><h3>cw-orders</h3><p>Uses the event for its order view</p></div><span class="reader-version" id="orders-reader">READS AS V1</span><span class="delivery-indicator" id="orders-state">WAITING</span></div>
+              <div class="work-result"><span class="work-icon">✓</span><span><b>show claim open banner</b><small id="orders-read">Waiting for a readable event</small></span></div>
+            </article>
+            <article class="service-card consumer-card schema-consumer" id="schema-finance">
+              <div class="consumer-main"><div class="service-icon finance-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5c-.7-.8-1.7-1.2-3-1.2-1.5 0-2.6.8-2.6 1.9s1.1 1.6 2.7 1.9 2.8.8 2.8 2-1.2 2.1-2.9 2.1c-1.3 0-2.5-.5-3.3-1.4M12.5 5.5v13"/></svg></div><div class="consumer-title"><h3>cw-finance</h3><p>Uses dispute data for payout handling</p></div><span class="reader-version" id="finance-reader">READS AS V1</span><span class="delivery-indicator" id="finance-state">WAITING</span></div>
+              <div class="work-result"><span class="work-icon">✓</span><span><b>block payout</b><small id="finance-read">Waiting for a readable event</small></span></div>
+            </article>
+            <article class="service-card consumer-card schema-consumer" id="schema-message">
+              <div class="consumer-main"><div class="service-icon message-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H6l-3 2v-5.2A7.5 7.5 0 1 1 20 11.5Z"/><path d="M7 11.5h.01M12 11.5h.01M17 11.5h.01"/></svg></div><div class="consumer-title"><h3>cw-message-center</h3><p>Creates an eligible system message</p></div><span class="reader-version" id="message-reader">READS AS V1</span><span class="delivery-indicator" id="message-state">WAITING</span></div>
+              <div class="work-result"><span class="work-icon">✓</span><span><b>create system message</b><small id="message-read">Waiting for a readable event</small></span></div>
+            </article>
+          </section>
+        </div>
+
+        <div class="scenario-controls" aria-label="Schema scenario controls">
+          <button class="play-button" id="run-v1" type="button"><span class="play-symbol">▶</span> Register v1 + publish</button>
+          <button class="scenario-button" id="publish-again" type="button" disabled>Publish again · cached ID</button>
+          <button class="scenario-button" id="try-rename" type="button" disabled>Try renaming a field</button>
+          <button class="scenario-button" id="safe-rename" type="button" disabled>Safe rename walkthrough</button>
+          <button class="scenario-button" id="add-field" type="button" disabled>Add a Finance-only field</button>
+          <button class="scenario-button pause-button" id="pause-schema" type="button" disabled aria-pressed="false">Ⅱ Pause</button>
+          <button class="scenario-button reset-button" id="reset-schema" type="button">Reset</button>
+        </div>
+        <div class="schema-explanation" id="schema-explanation" aria-live="polite"><span class="note-symbol">?</span><p>Schema Registry checks schema changes. It does not inspect every Kafka message.</p></div>
+        <div class="simulation-note schema-note"><span class="note-symbol">i</span><p><b>Safe rename:</b> update every consumer → add the new optional field and keep the old one → publish both → remove the old field after all consumers move. BACKWARD checks the latest prior version; BACKWARD_TRANSITIVE checks all prior versions. This demo uses the default <code>&lt;topic&gt;-value</code> subject and puts the schema ID in the value; Confluent can also put a schema GUID in a Kafka header. The subject and IDs are examples. This is a teaching model; Registry enforcement was not identified in the four audited Catawiki apps.</p></div>
+      </section>
+      <footer class="page-footer"><span>SCHEMA CONTRACTS <i>·</i> FIELD EVOLUTION <i>·</i> CONSUMER DECODING</span><span>DEMO MODEL · NOT CONNECTED TO KAFKA</span></footer>
+    </main>
+    <script type="module" src="/schema-simulation.js"></script>
+  </body>
+</html>

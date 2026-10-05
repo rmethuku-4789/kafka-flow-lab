@@ -1,0 +1,76 @@
+[hidden]{display:none!important}
+body{width:100vw;max-width:none}
+.app-shell{width:100%;max-width:none}
+#failure-stage{grid-template-columns:minmax(240px,.9fr) minmax(420px,1.3fr) minmax(310px,1.12fr);gap:clamp(36px,4.4vw,84px)}
+#failure-stage .connections{z-index:2}
+.cluster-frame{align-self:center;min-width:0;position:relative;display:grid;gap:8px;padding:0}
+.cluster-frame.is-replicated{border:1px solid #dce2e8;border-radius:16px;background:#f8fafd;padding:5px 12px 5px 66px;gap:3px}
+.cluster-caption,.controller-inset,.broker-header,.replica-meta{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.cluster-caption strong{font:800 18px var(--display)}
+.cluster-caption span,.controller-inset,.replica-meta,.cluster-offset{font:500 10px var(--mono);color:#52627a}
+.controller-inset{border:1px dashed #d7c9f0;background:#faf8ff;border-radius:6px;padding:5px;color:#6941b5}
+.controller-inset.is-electing{border-color:#edb45c;background:#fffaf1;color:#a66c1b}
+.broker-stack{display:grid;gap:12px}
+.failure-broker{position:relative;padding:7px 9px;display:grid;gap:4px;border-radius:12px;transition:border-color .2s,background .2s}
+.broker-header h2{font:800 19px var(--display);margin:0}
+.broker-role{font:600 10px var(--mono);color:#52627a;background:#f0f3f7;padding:3px 5px;border-radius:4px}
+.failure-broker.is-leader{border-color:#9abbf4;background:#f8fbff}
+.failure-broker.is-leader .broker-role{color:#2d6fec;background:#eaf2ff}
+.failure-broker.is-down{border-color:#df9292;background:#fff3f3}
+.failure-broker.is-down .broker-role,.failure-broker.is-down .replica-state{color:#a63636;background:#fdeaea}
+.failure-broker .topic-boundary{padding:5px}
+.failure-broker .topic-heading{min-height:20px}
+.failure-broker .topic-heading strong{font-size:11px}
+.failure-broker .partition-row{margin-top:3px;min-height:34px;padding:3px 5px}
+.failure-broker .stored-record{flex:none}
+.failure-broker .stored-record small{font-size:9px}
+.failure-broker .record-window{gap:5px}
+.cluster-offset{padding:3px 2px;color:#6941b5}
+#finance{min-height:180px}
+#finance .finance-member{grid-template-columns:1fr auto auto;padding:9px}
+#finance .member-progress{height:8px}
+#processing-fill{position:relative;width:0%;transform:none;background:#138772}
+#processing-fill::after{content:"";position:absolute;right:0;top:0;width:8px;height:8px;border-radius:50%;background:#0d6a59}
+#finance .member-records{font:500 12px var(--mono);min-height:20px}
+#finance[data-activity="processing"]{border-color:#bde3d6;background:#eff9f5}
+#producer[data-activity="error"]{border-color:#df9292;background:#fff3f3}
+#producer[data-activity="error"] #producer-state{color:#a63636}
+#finance[data-activity="error"]{border-color:#df9292;background:#fff3f3}
+#finance[data-activity="error"] .delivery-indicator,#finance[data-activity="error"] .member-state{color:#a63636;background:#fdeaea}
+#producer[data-activity="retry"]{border-color:#edb45c;background:#fffaf1}
+.packet{display:grid;pointer-events:none}
+.packet small{font-size:10px;white-space:normal;width:max-content;max-width:58px;line-height:1.2;text-align:center;border:1px solid #e4e9f0;background:#fff;border-radius:4px;padding:2px 3px}
+.stored-record.is-finance-committed{opacity:.55}
+.packet.is-control i{background:#8059dc}
+.connection-path.is-active{stroke:#2d6fec}
+.connection-path.is-control{stroke:#bca8e1;stroke-dasharray:4 4}
+.connection-path.is-active.is-control{stroke:#8059dc;stroke-dasharray:none}
+.playback-right{gap:5px}
+.playback-controls button{font-size:11px;padding-left:9px;padding-right:9px}
+.cluster-frame:not(.is-replicated){padding:16px;border:1px solid #dce3eb;border-radius:15px;background:#fff;box-shadow:0 4px 16px #1c2f4b0b}
+.cluster-frame:not(.is-replicated) .failure-broker{border:0;box-shadow:none;padding:0;background:transparent;gap:8px}
+.cluster-frame:not(.is-replicated) .broker-header h2{font-size:clamp(23px,1.35vw,26px);font-weight:700;letter-spacing:-.035em}
+.cluster-frame:not(.is-replicated) .topic-boundary{padding:7px}
+.cluster-frame:not(.is-replicated) .topic-heading{min-height:34px}
+.cluster-frame:not(.is-replicated) .topic-heading strong{font-size:clamp(12px,.88vw,17px)}
+.cluster-frame:not(.is-replicated) .partition-row{min-height:48px}
+.cluster-frame:has(.failure-broker.is-down):not(.is-replicated){border-color:#df9292;background:#fff3f3}
+.cluster-frame .offset-grid{grid-template-columns:1fr}
+.is-replicated .single-broker-detail{display:none}
+.cluster-frame .cluster-offset{padding:0}
+.is-replicated .coordinator{padding:5px}
+.is-replicated .internal-topic{margin:1px 0}
+.is-replicated .offset-grid>div{display:flex;justify-content:space-between;padding:3px 5px}
+.is-replicated .offset-grid strong{margin:0}
+.is-replicated .broker-stack{gap:4px}
+.is-replicated .failure-broker{padding:5px 7px;gap:3px}
+.is-replicated .broker-header h2{font-size:23px;font-weight:700;letter-spacing:-.035em}
+.broker-header h2 span{color:#8a96a6;font-weight:500}
+.is-replicated .replica-meta{display:none}
+.is-replicated .topic-heading{min-height:24px}
+.is-replicated .topic-heading strong{font-size:12px}
+.is-replicated .topic-boundary{padding:4px}
+.is-replicated .partition-row{min-height:38px}
+.single-broker-detail.leader-note{color:#138772}
+.failure-broker .stored-record small{font-size:8px}
+@media(max-height:820px){.controller-inset{padding:4px}.replica-meta{font-size:9px}.is-replicated .broker-role{font-size:9px}}

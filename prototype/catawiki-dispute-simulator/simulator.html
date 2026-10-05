@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f3f5f7" />
+    <title>Kafka Flow Lab — The dispute event journey</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/simulator.css" />
+    <link rel="stylesheet" href="/simulator-layout.css" />
+    <link rel="stylesheet" href="/simulator-presentation.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <main class="app-shell lesson-shell">
+      <header class="topbar">
+        <a class="brand" href="/simulator" aria-label="Kafka Flow Lab simulator"><span class="brand-mark"><i></i><i></i><i></i></span><span>KAFKA <b>FLOW LAB</b></span></a>
+        <div class="topbar-right"><span class="lesson-pill"><span></span> LIVE LESSON</span><span class="environment-tag">SIMULATED · NO BACKEND</span></div>
+      </header>
+
+      <section class="intro" aria-labelledby="page-title">
+        <div class="intro-copy"><p class="eyebrow">THE DISPUTE EVENT · RECAP</p><h1 id="page-title">One dispute. <em>Three independent reactions.</em></h1></div>
+        <aside class="intro-aside"><p>One customer event enters Kafka. Each independent consumer group receives and acts on it.</p><span class="answer-cue"><i class="stream-pulse"></i> WATCH THE EVENT TRAVEL</span></aside>
+      </section>
+
+      <section class="simulation lesson-simulation" aria-label="Continuous Kafka event flow">
+        <div class="stage-heading"><div><span class="stage-index">01</span><span>ONE EVENT · THREE INDEPENDENT CONSUMERS</span></div></div>
+        <div class="flow-stage lesson-flow" id="lesson-flow">
+          <svg class="connections lesson-connections" id="lesson-connections" aria-hidden="true"><defs><linearGradient id="lesson-gradient"><stop offset="0" stop-color="#8c74d8"/><stop offset=".52" stop-color="#3678ed"/><stop offset="1" stop-color="#2eaa91"/></linearGradient><filter id="lesson-glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter><marker id="lesson-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 8 4 0 8Z" fill="#96a9c4"/></marker></defs><g id="lesson-paths"></g></svg>
+          <div class="lesson-packet" id="lesson-packet" aria-hidden="true"><span class="packet-light"></span><b>DisputeCreated</b><small>evt-001</small></div>
+
+          <article class="service-card producer-card lesson-producer" id="lesson-producer">
+            <div class="card-topline"><span class="role-label"><span class="role-dot producer-dot"></span> PRODUCER</span><span class="step-status" id="lesson-producer-status">READY</span></div>
+            <div class="service-title"><div class="service-icon customer-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/></svg></div><div><h2>cw-customer-info</h2><p>Dispute created</p></div></div>
+            <div class="event-summary"><span class="event-summary-icon">↗</span><span><b>DisputeCreated</b><small>Customer event</small></span></div>
+            <div class="producer-foot"><span class="pulse-dot"></span><span>Publish once · continue work</span></div>
+          </article>
+
+          <section class="broker-card lesson-broker" id="lesson-broker" aria-label="Kafka cluster with a topic partition and group coordinator">
+            <div class="broker-header"><div><div class="card-topline"><span class="role-label"><span class="role-dot kafka-dot"></span> KAFKA CLUSTER</span><span class="broker-state" id="lesson-broker-status">WAITING</span></div><h2>Kafka <span>cluster</span></h2></div></div>
+            <section class="topic-boundary" aria-label="Logical Kafka topic customer_info_disputes">
+              <div class="topic-boundary-head"><span class="topic-led"></span><div><small>LOGICAL TOPIC</small><b>customer_info_disputes</b></div></div>
+              <div class="partition-list"><div class="partition-row" id="lesson-partition"><span class="partition-name">P0</span><div class="partition-track"><span class="lesson-record-list" id="lesson-record" aria-label="Most recent records"></span></div><span class="partition-count" id="lesson-record-count">EMPTY</span></div></div>
+              <div class="broker-footer"><span class="retention-icon">↻</span><span>P0 leader broker · one ordered log</span></div>
+            </section>
+            <section class="offset-log" id="lesson-offset-log" aria-label="Group coordinator storing committed offsets">
+              <div class="offset-log-head"><span><i></i> GROUP COORDINATOR</span><small id="lesson-coordinator-status">READY · 3 GROUPS</small></div>
+              <div class="offset-log-topic"><b>__consumer_offsets</b><span>COMPACTED INTERNAL TOPIC</span></div>
+              <div class="offset-log-entries"><span data-commit-group="orders">orders <b>—</b></span><span data-commit-group="finance">finance <b>—</b></span><span data-commit-group="message">message-center <b>—</b></span></div>
+            </section>
+          </section>
+
+          <section class="consumer-column lesson-consumers" aria-label="Three independent consumer groups">
+            <div class="consumer-column-head"><span class="role-label"><span class="role-dot consumer-dot"></span> CONSUMERS</span><span class="group-note">3 SEPARATE GROUPS</span></div>
+            <article class="service-card consumer-card" data-lesson-consumer="orders"><div class="consumer-main"><div class="service-icon orders-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 7 2 2 4-4"/><path d="m5 15 2 2 4-4"/><path d="M14 7h5M14 15h5"/><path d="M4 3.5h16v17H4z"/></svg></div><div class="consumer-title"><h3>cw-orders</h3></div><span class="delivery-indicator">WAITING</span></div><div class="consumer-progress"><span class="group-tag">GROUP · orders</span><span class="offset-readout">NEXT OFFSET <b data-lesson-offset>—</b></span></div><div class="work-result"><span class="work-icon">✓</span><span><b>Show claim open banner</b><small data-lesson-result>Ready for event</small></span></div></article>
+            <article class="service-card consumer-card" data-lesson-consumer="finance"><div class="consumer-main"><div class="service-icon finance-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5c-.7-.8-1.7-1.2-3-1.2-1.5 0-2.6.8-2.6 1.9s1.1 1.6 2.7 1.9 2.8.8 2.8 2-1.2 2.1-2.9 2.1c-1.3 0-2.5-.5-3.3-1.4M12.5 5.5v13"/></svg></div><div class="consumer-title"><h3>cw-finance</h3></div><span class="delivery-indicator">WAITING</span></div><div class="consumer-progress"><span class="group-tag">GROUP · finance</span><span class="offset-readout">NEXT OFFSET <b data-lesson-offset>—</b></span></div><div class="work-result"><span class="work-icon">✓</span><span><b>Block payout</b><small data-lesson-result>Ready for event</small></span></div></article>
+            <article class="service-card consumer-card" data-lesson-consumer="message"><div class="consumer-main"><div class="service-icon message-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H6l-3 2v-5.2A7.5 7.5 0 1 1 20 11.5Z"/><path d="M7 11.5h.01M12 11.5h.01M17 11.5h.01"/></svg></div><div class="consumer-title"><h3>cw-message-center</h3><p>Eligible cases only</p></div><span class="delivery-indicator">WAITING</span></div><div class="consumer-progress"><span class="group-tag">GROUP · message-center</span><span class="offset-readout">NEXT OFFSET <b data-lesson-offset>—</b></span></div><div class="work-result"><span class="work-icon">✓</span><span><b>Create system message</b><small data-lesson-result>Ready for event</small></span></div></article>
+          </section>
+        </div>
+        <div class="lesson-playback-controls playback-controls" aria-label="Recap animation controls"><div class="stage-heading-controls"><div class="pace-control"><div class="pace-heading"><label for="animation-speed">ANIMATION SPEED</label><output id="animation-speed-value" for="animation-speed">0.5×</output></div><input id="animation-speed" type="range" min="0.25" max="1.5" step="0.05" value="0.5" aria-valuetext="0.5 times speed" aria-describedby="pace-range-labels"><div class="pace-range-labels" id="pace-range-labels"><span>SLOWEST</span><span>FASTEST</span></div></div><button class="lesson-pause" id="lesson-pause" type="button" aria-pressed="false">Ⅱ Pause</button><span class="live-indicator"><i></i><span id="lesson-flow-status" aria-live="polite">CONTINUOUS FLOW</span></span></div><a class="scenario-button next-scenario-control" href="/partitions">Next scenario →</a></div>
+        <div class="simulation-note"><span class="note-symbol">↻</span><p>Each cycle is a new DisputeCreated event (evt-001, evt-002…). All three groups process that event and commit their own next offset before the next event begins.</p></div>
+      </section>
+    </main>
+    <script type="module" src="/simulator.js"></script>
+    <script type="module" src="/scenario-navigation.js"></script>
+  </body>
+</html>

@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f3f5f7" />
+    <title>Kafka Flow Lab — Dead-letter queue</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script type="module" src="/scenario-navigation.js"></script>
+    <link rel="stylesheet" href="/ordering.css" />
+    <link rel="stylesheet" href="/durability.css" />
+    <link rel="stylesheet" href="/cumulative.css" />
+    <link rel="stylesheet" href="/dlq.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  </head>
+  <body class="schema-page ordering-page durability-page cumulative-page">
+    <main class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="/recap" aria-label="Kafka Flow Lab recap"><span class="brand-mark"><i></i><i></i><i></i></span><span>KAFKA <b>FLOW LAB</b></span></a>
+        <div class="topbar-right"><a class="scenario-link" href="/groups">SCENARIO 05 · CONSUMER GROUPS</a><span class="lesson-pill"><span></span> SCENARIO 09</span><span class="environment-tag">SIMULATED · NO BACKEND</span></div>
+      </header>
+
+      <section class="intro" aria-labelledby="dlq-title"><div class="intro-copy"><p class="eyebrow">ONE DISPUTE · P0 ACROSS THREE BROKERS</p><h1 id="dlq-title">What if one record<br /><em>cannot be processed?</em></h1></div><div class="intro-aside"><p>The record refers to a missing notice template. Retrying unchanged input cannot fix that. Message Center can hold P0 and alert, or copy the record to a review topic.</p><span class="answer-cue">FOLLOW P0 <b>↓</b></span></div></section>
+
+      <section class="simulation ordering-simulation durability-simulation" aria-label="Dead-letter queue simulator with producer, replicated Kafka partition, and consumer groups">
+        <div class="stage-heading"><div><span class="stage-index">09</span><span>NON-RETRYABLE RECORD · REVIEW TOPIC</span></div><div class="durability-metrics"><span class="control-kind" id="durability-isr">ISR · 3 / 3</span><span class="control-kind durability-ack" id="durability-ack">WAITING FOR WRITE</span></div></div>
+
+        <div class="flow-stage schema-flow-stage durability-stage" id="durability-stage" data-scene="dlq">
+          <svg class="connections schema-connections" id="durability-connections" aria-hidden="true"><defs><marker id="durability-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 8 4 0 8Z" fill="context-stroke"/></marker></defs><g id="durability-paths"></g></svg>
+          <div class="ordering-packet durability-packet" id="durability-packet" aria-hidden="true"><span></span><b>created</b><small>P0 · offset 0</small></div>
+
+          <article class="service-card producer-card durability-producer" id="durability-producer">
+            <div class="card-topline"><span class="role-label"><span class="role-dot producer-dot"></span> PRODUCER</span><span class="step-status" id="durability-producer-state">READY</span></div>
+            <div class="service-title"><div class="service-icon customer-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/></svg></div><div><h2>cw-customer-info</h2><p>Publishes dispute events</p></div></div>
+            <div class="durability-setting"><span>PRODUCER ACKS</span><b>all</b><small>Wait for every replica currently in the ISR.</small></div>
+            <div class="durability-write-state" id="durability-write-state"><span class="durability-status-dot"></span><b>Ready to publish</b></div>
+          </article>
+
+          <section class="broker-card durability-cluster" id="durability-cluster" aria-label="Kafka topic partition replicas across three brokers">
+            <div class="broker-header"><div><div class="card-topline"><span class="role-label"><span class="role-dot kafka-dot"></span> KAFKA CLUSTER</span><span class="broker-state" id="durability-broker-state">READY</span></div><h2>One partition <span>· P0</span></h2></div></div>
+            <div class="topic-label"><span class="topic-led"></span><span>…_customer_info_disputes</span><span class="topic-chip">TOPIC</span></div>
+            <div class="durability-settings"><span>REPLICATION FACTOR <b>3</b></span><span>MIN IN-SYNC REPLICAS <b>2</b></span></div>
+            <div class="durability-brokers" id="durability-brokers">
+              <article class="durability-broker is-leader" data-broker="0" id="durability-broker-0" aria-label="Broker 1, partition 0 leader">
+                <div class="durability-broker-head"><b>Broker 1</b><span class="broker-role">LEADER</span></div><div class="replica-label">P0 · replica</div><div class="replica-records" aria-label="Partition records"></div><div class="broker-health"><i></i><span>IN SYNC</span></div>
+              </article>
+              <article class="durability-broker" data-broker="1" id="durability-broker-1" aria-label="Broker 2, partition 0 follower">
+                <div class="durability-broker-head"><b>Broker 2</b><span class="broker-role">FOLLOWER</span></div><div class="replica-label">P0 · replica</div><div class="replica-records" aria-label="Partition records"></div><div class="broker-health"><i></i><span>IN SYNC</span></div>
+              </article>
+              <article class="durability-broker" data-broker="2" id="durability-broker-2" aria-label="Broker 3, partition 0 follower">
+                <div class="durability-broker-head"><b>Broker 3</b><span class="broker-role">FOLLOWER</span></div><div class="replica-label">P0 · replica</div><div class="replica-records" aria-label="Partition records"></div><div class="broker-health"><i></i><span>IN SYNC</span></div>
+              </article>
+            </div>
+            <div class="cumulative-log" id="cumulative-log" aria-label="Source topic records"></div><div class="cumulative-dlq" id="cumulative-dlq" hidden><b>demo.message-center.review</b><span id="cumulative-dlq-state">No failed event copy</span></div><div class="durability-cluster-foot"><span>Same P0 log is copied across brokers.</span><span id="durability-cluster-note">Leader appends · followers replicate</span></div>
+          </section>
+
+          <section class="consumer-column ordering-consumer-column durability-consumers" aria-label="Three independent consumer groups reading the topic">
+            <div class="consumer-column-head"><span class="role-label"><span class="role-dot consumer-dot"></span> CONSUMER GROUPS</span><span class="group-note">EACH READS P0 INDEPENDENTLY</span></div>
+            <article class="service-card consumer-card partitions-consumer-card durability-consumer" data-durability-consumer="orders">
+              <div class="consumer-main"><div class="service-icon orders-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 7 2 2 4-4"/><path d="m5 15 2 2 4-4"/><path d="M14 7h5M14 15h5"/><path d="M4 3.5h16v17H4z"/></svg></div><div class="consumer-title"><h3>cw-orders</h3><p>show claim open banner</p></div><span class="delivery-indicator" data-durability-state="orders">WAITING</span></div>
+              <div class="consumer-progress"><span class="group-tag">GROUP · …_orders_karafka</span></div>
+            </article>
+            <article class="service-card consumer-card partitions-consumer-card durability-consumer" data-durability-consumer="finance">
+              <div class="consumer-main"><div class="service-icon finance-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5c-.7-.8-1.7-1.2-3-1.2-1.5 0-2.6.8-2.6 1.9s1.1 1.6 2.7 1.9 2.8.8 2.8 2-1.2 2.1-2.9 2.1c-1.3 0-2.5-.5-3.3-1.4M12.5 5.5v13"/></svg></div><div class="consumer-title"><h3>cw-finance</h3><p>block payout</p></div><span class="delivery-indicator" data-durability-state="finance">WAITING</span></div>
+              <div class="consumer-progress"><span class="group-tag">GROUP · …_finance_karafka</span></div><div class="cumulative-detail" id="finance-detail"><span>FINANCE / P0 · COMMITTED NEXT <b id="finance-offset">7</b></span><small id="finance-effect">Payout: allowed</small></div>
+            </article>
+            <article class="service-card consumer-card partitions-consumer-card durability-consumer" data-durability-consumer="message-center">
+              <div class="consumer-main"><div class="service-icon message-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H6l-3 2v-5.2A7.5 7.5 0 1 1 20 11.5Z"/><path d="M7 11.5h.01M12 11.5h.01M17 11.5h.01"/></svg></div><div class="consumer-title"><h3>cw-message-center</h3><p>create system message</p></div><span class="delivery-indicator" data-durability-state="message-center">WAITING</span></div>
+              <div class="consumer-progress"><span class="group-tag">GROUP · …_message_center_karafka</span></div><div class="cumulative-detail" id="message-detail"><span>MESSAGE CENTER / P0 · COMMITTED NEXT <b id="message-offset">7</b></span><small id="message-effect">Notice: pending</small></div>
+            </article>
+          </section>
+        </div>
+
+        <div class="cumulative-controls" aria-label="Shared Kafka flow controls">
+          <button class="play-button" id="cumulative-publish" type="button">▶ Publish created</button>
+          <button class="scenario-button" id="cumulative-fail-leader" type="button" disabled>✕ Fail leader</button>
+          <button class="scenario-button" id="cumulative-fail-follower" type="button" disabled>✕ Fail another broker</button>
+          <button class="scenario-button pause-button" id="cumulative-pause" type="button" aria-pressed="false">Ⅱ Pause</button>
+          <label class="cumulative-speed" for="cumulative-speed">Speed <input id="cumulative-speed" type="range" min="0.5" max="1.5" step="0.25" value="1"><output id="cumulative-speed-value">1×</output></label>
+          <button class="scenario-button reset-button cumulative-reset" id="cumulative-reset" type="button">Reset</button>
+        </div>
+        <div class="cumulative-story">
+          <section class="cumulative-story-main" aria-label="Current scenario actions"><span>NEW IN SCENARIO 09 · DEAD-LETTER QUEUE</span><div class="cumulative-actions" id="cumulative-actions"></div></section>
+          <details class="cumulative-prior"><summary>Earlier scenario controls</summary><small>Reset to switch examples.</small><div class="cumulative-actions" id="cumulative-prior-actions"></div></details>
+        </div>
+        <div class="schema-explanation durability-explanation cumulative-explanation" id="durability-explanation" aria-live="polite"><span class="note-symbol">?</span><p>Keep ISR, offsets, and retries. Add an optional review topic inside the Kafka cluster.</p></div>
+        <div class="simulation-note ordering-note durability-note cumulative-note"><span class="note-symbol">i</span><p><b>What to remember:</b> Core Kafka does not automatically send records to a DLQ. This demo assumes the configured review-topic write succeeds; the application then advances its source offset. Without a transaction, a crash between those actions can duplicate the copy. Advancing past the failed record lets later P0 records proceed, so review and repair must be owned operationally. Replication factor 3, <code>min.insync.replicas=2</code>, and <code>acks=all</code> are illustrative settings, not verified Catawiki production settings.</p></div>
+      </section>
+      <footer class="page-footer"><span>DEAD-LETTER QUEUE <i>·</i> CUMULATIVE KAFKA FLOW</span><span>DEMO MODEL · NOT CONNECTED TO KAFKA</span></footer>
+    </main>
+    <script type="module" src="/dlq-simulation.js"></script>
+  </body>
+</html>
