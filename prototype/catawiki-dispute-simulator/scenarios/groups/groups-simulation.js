@@ -1,49 +1,55 @@
+import { displayRecordProgress } from "../../shared/scripts/record-progress.js";
+import { createPlayback, PACKET_DURATION } from "../../shared/scripts/playback.js";
 import { animate } from "motion";
+import { partitionForKey } from "./groups-partitioning.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const stage = $("#groups-stage");
 const svgGroup = $("#groups-paths");
-const speedInput = $("#speed-control");
+const playbackControls = createPlayback();
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const animations = new Set();
 const routes = { data: new Map(), control: new Map() };
 const scenes = [
-  ["THE FINANCE BACKLOG", "Finance is falling behind while records keep arriving. What would you try?", "ASK THE ROOM"],
-  ["A SECOND FINANCE READER", "What do you notice about the Finance readers?", "ASK THE ROOM"],
-  ["A SECOND PARTITION", "New records now land on both partitions. What is still being repeated?", "ASK THE ROOM"],
-  ["PARTITION ASSIGNMENT", "With two Finance members sharing one group, how might their partitions be assigned?", "ASK THE ROOM"],
-  ["A THIRD FINANCE MEMBER", "There are two partitions and three Finance members. What might happen to the extra member?", "ASK THE ROOM"],
-  ["TWO EVENTS · TWO PARTITIONS", "What do you notice about the event order?", "ASK THE ROOM"],
-  ["ONE DISPUTE KEY", "Created and Resolved share a dispute key. Where might they land, and in what order?", "ASK THE ROOM"],
+  ["THE FINANCE BACKLOG", "One partition, one Finance consumer. What happens when processing cannot keep up?", ""],
+  ["A GROUP OF ONE", "Finance already belongs to a consumer group. Would another member help?", "THE KAFKA WAY"],
+  ["A SECOND FINANCE CONSUMER", "Finance B joined the same group. Why is it idle?", ""],
+  ["ADD A SECOND PARTITION", "One partition per consumer. What happens to the records already in P0?", ""],
+  ["TWO CONSUMERS · SHARED WORK", "New records reach both partitions; the existing backlog stays in P0.", "THE KAFKA WAY"],
+  ["A THIRD FINANCE MEMBER", "There are two partitions and three Finance members. What happens to the extra member?", ""],
+  ["TWO EVENTS · TWO PARTITIONS", "What do you notice about the event order?", ""],
+  ["ONE DISPUTE KEY", "Created and Resolved share a dispute key. Where might they land, and in what order?", ""],
 ];
-const nextLabels = ["What would you do? →", "Next →", "Next →", "Next →", "Next →", "Show keyed events →", "Complete"];
+const nextLabels = ["Reveal Finance group →", "Add Finance B →", "Add partition P1 →", "Send to both partitions →", "Add Finance C →", "Show unkeyed events →", "Show keyed events →", "Complete"];
 const state = {
   scene: 0,
   partitionCount: 1,
   records: [],
   offsets: { orders: [0, 0], message: [0, 0], "finance-disputes": [0, 0] },
   readers: ["A"],
-  grouped: false,
-  assignments: { 0: "A", 1: "B" },
+  grouped: true,
+  groupRevealed: false,
+  rebalancing: false,
+  step: "",
+  checkpoint: false,
+  assignments: { 0: "A" },
   outcome: "",
-  duplicateRecord: null,
   processedByGroup: {},
   appliedByGroup: {},
   starts: {},
+  acknowledged: {},
+  events: [],
 };
 const history = [];
-let speed = Number(speedInput.value);
 let busy = false;
-let paused = false;
+let paused = document.hidden;
 let producerRoute;
-let resumeWaiters = [];
-let liveTrafficPromise = null;
-let stopLiveTraffic = false;
 let orderingCheckpoint = null;
+let orderingReturn = null;
 let flowController = new AbortController();
 let laggedMembers = new Set();
-let duplicateReady = false;
 let memberTransitionSignal = null;
+const activePackets = new Set();
 
 function assertActive(signal) {
   if (signal.aborted) throw new DOMException("Scene changed", "AbortError");
@@ -52,8 +58,7 @@ function assertActive(signal) {
 async function finishAnimation(animation, signal = flowController.signal) {
   assertActive(signal);
   animations.add(animation);
-  animation.speed = speed;
-  if (paused) animation.pause();
+  const release = playbackControls.track(animation);
   let abort;
   try {
     await Promise.race([
@@ -67,20 +72,23 @@ async function finishAnimation(animation, signal = flowController.signal) {
   } finally {
     signal.removeEventListener("abort", abort);
     animations.delete(animation);
+    release();
   }
 }
 
 function cancelFlow() {
   flowController.abort();
   flowController = new AbortController();
-  stopLiveTraffic = true;
-  liveTrafficPromise = null;
-  resumeWaiters.splice(0).forEach((resume) => resume());
   stage.querySelectorAll(".packet:not(#packet-template)").forEach((packet) => packet.remove());
   document.querySelectorAll(".is-processing,.is-receiving,.event-card.is-active").forEach((card) => card.classList.remove("is-processing", "is-receiving", "is-active"));
   document.querySelectorAll(".member-progress i,.progress-fill").forEach((fill) => { fill.style.transform = "scaleX(0)"; });
   $("#coordinator").classList.remove("is-active");
-  paused = false;
+  $('[data-partition="1"]').classList.remove("is-new-partition");
+  for (const element of [$("#finance-members"), $('[data-partition="1"]')]) {
+    element.style.opacity = "";
+    element.style.transform = "";
+  }
+  paused = playbackControls.paused;
 }
 
 function recordIdentity(record) {
@@ -91,18 +99,20 @@ function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+// Read-only snapshot for browser verification of the synthetic model.
+export function simulationSnapshot() {
+  return clone({ ...state, busy, paused, pendingMemberTransition: Boolean(memberTransitionSignal && !memberTransitionSignal.aborted) });
+}
+
 function restoreProducerEvents() {
   document.querySelectorAll(".event-card").forEach((card) => {
-    const record = state.records.filter((entry) => entry.event === card.dataset.event).at(-1);
-    $("small", card).textContent = record
-      ? `${recordIdentity(record)} · ${record.dispute}${record.key ? ` · KEY ${record.key}` : ""}`
-      : card.dataset.event;
+    $("small", card).textContent = card.dataset.event;
     card.classList.remove("is-active");
   });
 }
 
 function groupId(member) {
-  return state.grouped ? "finance-disputes" : member === "A" ? "finance-disputes" : `finance-copy-${member.toLowerCase()}`;
+  return "finance-disputes";
 }
 
 function targetElement(target) {
@@ -143,9 +153,10 @@ function drawRoutes() {
   const brokerRight = broker.getBoundingClientRect().right - bounds.left;
   const coordinatorRight = edge(coordinator, bounds, "right").x + 8;
   const producerEdge = edge(producer, bounds, "right");
+  const producerExit = state.scene >= 6 ? edge($(".selection-output"), bounds, "right") : producerEdge;
   const brokerLeft = edge(broker, bounds, "left");
   const producerMiddle = (producerEdge.x + brokerLeft.x) / 2;
-  producerRoute = path(`M ${producerEdge.x} ${producerEdge.y} H ${producerMiddle} V ${brokerLeft.y} H ${brokerLeft.x}`, "producer");
+  producerRoute = path(`M ${producerExit.x} ${producerExit.y} H ${producerMiddle} V ${brokerLeft.y} H ${brokerLeft.x}`, "producer");
 
   const targets = ["orders", ...state.readers.map((member) => `finance-${member}`), "message"];
   const entries = targets.map((name) => ({ name, element: targetElement(name) })).filter(({ element }) => element);
@@ -166,52 +177,70 @@ function drawRoutes() {
     routes.data.set(name, path(`M ${brokerRight} ${dataY} H ${spineX} V ${point.y} H ${point.x}`, `data-${name}`, true));
     routes.control.set(name, path(`M ${coordinatorRight} ${controlY} H ${spineX} V ${point.y} H ${point.x}`, `control-${name}`, true, true));
   }
+  activePackets.forEach(packet => positionPacket(packet, Number(packet.dataset.progress)));
+}
+
+function positionPacket(packet, progress) {
+  packet.dataset.progress = String(progress);
+  const route = svgGroup.querySelector(`[data-route="${packet.dataset.route}"]`);
+  if (!route) return;
+  const fraction = packet.dataset.reverse === "true" ? 1 - progress : progress;
+  const point = route.getPointAtLength(route.getTotalLength() * fraction);
+  packet.style.transform = `translate(${point.x - packet.offsetWidth / 2}px, ${point.y - packet.offsetHeight / 2}px)`;
+  const bounds = stage.getBoundingClientRect();
+  const left = (packet.dataset.route === "producer" ? $("#groups-producer") : $("#groups-broker")).getBoundingClientRect().right - bounds.left;
+  const right = (packet.dataset.route === "producer" ? $("#groups-broker") : $("#orders-card")).getBoundingClientRect().left - bounds.left;
+  const label = $("small", packet);
+  label.style.maxWidth = `${right - left - 6}px`;
+  const half = label.getBoundingClientRect().width / 2;
+  const desired = Math.max(left + half + 3, Math.min(right - half - 3, point.x));
+  label.style.left = `${desired - point.x + packet.offsetWidth / 2}px`;
+  const placed = [];
+  for (const active of activePackets) $("small", active).style.bottom = "17px";
+  for (const active of activePackets) {
+    const current = $("small", active);
+    for (let attempt = 0; attempt < activePackets.size; attempt += 1) {
+      const rect = current.getBoundingClientRect();
+      const collides = placed.some(other => Math.min(rect.right, other.right) > Math.max(rect.left, other.left) && Math.min(rect.bottom, other.bottom) > Math.max(rect.top, other.top));
+      if (!collides) break;
+      current.style.bottom = `${parseFloat(current.style.bottom) + rect.height + 3}px`;
+    }
+    placed.push(current.getBoundingClientRect());
+  }
 }
 
 function setActive(route) {
-  route?.classList.add("is-active");
+  route?.classList.add(route.dataset.route.startsWith("control-") ? "is-control-active" : "is-active");
 }
 
 async function fly(route, label, { reverse = false } = {}) {
   const signal = flowController.signal;
   assertActive(signal);
   if (!route) return;
+  if (state.scene >= 1 && /^(data|control)-(orders|message)$/.test(route.dataset.route)) {
+    // Keep the modeled delivery timing; only hide the background group's traffic.
+    await wait(PACKET_DURATION);
+    return;
+  }
   const token = $("#packet-template").cloneNode(true);
   token.removeAttribute("id");
   token.hidden = false;
   token.style.display = "grid";
+  token.dataset.route = route.dataset.route;
+  token.dataset.reverse = String(reverse);
+  token.classList.toggle("packet--control", route.dataset.route.startsWith("control-"));
   $("small", token).textContent = label;
   stage.append(token);
-  const rect = token.getBoundingClientRect();
-  const length = route.getTotalLength();
-  const points = reducedMotion ? [route.getPointAtLength(0), route.getPointAtLength(length)] :
-    Array.from({ length: 34 }, (_, index) => route.getPointAtLength(length * index / 33));
-  if (reverse) points.reverse();
+  activePackets.add(token);
+  positionPacket(token, 0);
   setActive(route);
-  const animation = animate(token, {
-    x: points.map(({ x }) => x - rect.width / 2),
-    y: points.map(({ y }) => y - rect.height / 2),
-  }, { duration: reducedMotion ? 0.1 : 0.95, ease: "linear" });
-  await finishAnimation(animation, signal);
-  token.remove();
-  route.classList.remove("is-active");
+  const animation = animate(0, 1, { duration: playbackControls.duration(PACKET_DURATION) / 1000, ease: "linear", onUpdate: value => { if (!signal.aborted) positionPacket(token, value); } });
+  try { await finishAnimation(animation, signal); }
+  finally { activePackets.delete(token); token.remove(); svgGroup.querySelector(`[data-route="${route.dataset.route}"]`)?.classList.remove("is-active", "is-control-active"); }
 }
 
-async function wait(duration, interruptible = false) {
-  const signal = flowController.signal;
-  let remaining = reducedMotion ? 20 : duration;
-  while (remaining > 0) {
-    assertActive(signal);
-    if (interruptible && stopLiveTraffic) return;
-    if (paused) {
-      await new Promise((resolve) => resumeWaiters.push(resolve));
-      continue;
-    }
-    const start = performance.now();
-    await new Promise((resolve) => setTimeout(resolve, Math.min(50, remaining / speed)));
-    if (!paused) remaining -= (performance.now() - start) * speed;
-  }
-  assertActive(signal);
+function wait(duration) {
+  return playbackControls.wait(duration, {signal: flowController.signal});
 }
 
 function groupLag(id, partition = null) {
@@ -220,18 +249,27 @@ function groupLag(id, partition = null) {
 }
 
 function updateOffsets() {
-  const format = (group) => Array.from({ length: state.partitionCount }, (_, partition) =>
-    `P${partition} · ${state.offsets[group]?.[partition] === null ? `UNCOMMITTED · START ${state.starts[group]?.[partition] ?? 0}` : `NEXT ${state.offsets[group]?.[partition] ?? 0}`}`).join("  ");
+  const format = (group, values = state.offsets) => Array.from({ length: state.partitionCount }, (_, partition) =>
+    `P${partition} · ${values[group]?.[partition] === null ? `UNCOMMITTED · START ${state.starts[group]?.[partition] ?? 0}` : `NEXT ${values[group]?.[partition] ?? 0}`}`).join("\n");
+  $("#coordinator").classList.toggle("finance-focus", state.scene > 0);
   $("#orders-offset").textContent = format("orders");
   $("#message-offset").textContent = format("message");
-  $("#finance-offset").textContent = state.grouped
-    ? format("finance-disputes")
-    : state.readers.length > 1
-      ? `A · ${format("finance-disputes")}\nB · ${format("finance-copy-b")}`
-      : format("finance-disputes");
-  $("#orders-next").textContent = format("orders");
-  $("#message-next").textContent = format("message");
-  $("#coordinator-state").textContent = state.grouped ? "FINANCE GROUP OFFSETS" : "INDEPENDENT GROUP OFFSETS";
+  $("#finance-offset").textContent = format("finance-disputes");
+  $("#orders-next").textContent = format("orders", state.acknowledged);
+  $("#message-next").textContent = format("message", state.acknowledged);
+  for (const id of state.readers) {
+    const group = groupId(id);
+    const partitions = state.grouped ? Object.entries(state.assignments).filter(([, member]) => member === id).map(([p]) => Number(p)) : Array.from({length:state.partitionCount},(_,p)=>p);
+    const card = targetElement(`finance-${id}`);
+    const label = card && $(".member-next", card);
+    if (label) label.textContent = partitions.map(p => {
+      const acknowledged = state.acknowledged[group]?.[p];
+      return acknowledged === null
+        ? `P${p} · START ${state.starts[group]?.[p] ?? 0} · UNCOMMITTED`
+        : `P${p} · NEXT ${acknowledged ?? 0}`;
+    }).join(" · ");
+  }
+  $("#coordinator-state").textContent = state.rebalancing ? "REBALANCING" : state.scene > 0 ? "FINANCE GROUP OFFSETS" : "INDEPENDENT GROUP OFFSETS";
   updateFinanceLagUI();
 }
 
@@ -239,15 +277,15 @@ function updateFinanceLagUI() {
   for (const id of state.readers) {
     const card = $(`[data-member="${id}"]`);
     if (!card) continue;
-    if (id === "C") continue;
     const group = state.grouped ? "finance-disputes" : groupId(id);
     const partitions = state.grouped
       ? Object.entries(state.assignments).filter(([, member]) => member === id).map(([partition]) => Number(partition))
       : [null];
     const lag = partitions.reduce((total, partition) => total + groupLag(group, partition), 0);
-    $(".member-lag", card).textContent = `LAG ${lag}`;
+    $(".member-lag", card).textContent = partitions.length ? `LAG ${lag}` : "LAG —";
+    if (!partitions.length || state.rebalancing) continue;
     if (lag > 1) laggedMembers.add(id);
-    const behind = !state.grouped && (lag > 1 || (lag > 0 && laggedMembers.has(id)));
+    const behind = state.scene <= 3 && (lag > 1 || (lag > 0 && laggedMembers.has(id)));
     if (!lag) laggedMembers.delete(id);
     if (card.dataset.activity !== "error") card.dataset.activity = behind ? "lagging" : card.classList.contains("is-processing") ? "processing" : "idle";
     const status = $(".member-state", card);
@@ -266,9 +304,12 @@ function updateRecordWindow() {
       const entry = document.createElement("span");
       entry.className = "stored-record";
       const dot = document.createElement("span");
-      dot.className = `record-dot${record === records.at(-1) ? " is-latest" : ""}`;
+      const trackedGroups = state.scene === 0 ? ["orders", "message", "finance-disputes"] : ["finance-disputes"];
+      dot.className = "record-dot";
       dot.textContent = String(record.offset);
       dot.title = `${record.event} · ${record.dispute} · P${partition} offset ${record.offset}${record.key ? ` · key ${record.key}` : " · no key"}`;
+      displayRecordProgress(dot, record, { groups: trackedGroups, nextByGroup: state.acknowledged, scope: window, playback: playbackControls,
+        failed: state.events.some(e => e.phase === "rejected" && e.record === recordIdentity(record)) && (state.acknowledged["finance-disputes"]?.[partition] ?? 0) <= record.offset });
       const label = document.createElement("small");
       label.textContent = record.event === "DisputeCreated" ? "CREATED" : "RESOLVED";
       entry.append(dot, label);
@@ -283,34 +324,30 @@ function updateRecordWindow() {
 function renderFinanceMembers() {
   const wrapper = $("#finance-members");
   wrapper.replaceChildren();
-  wrapper.classList.toggle("finance-group-boundary", state.grouped);
-  wrapper.dataset.groupLabel = "ONE FINANCE CONSUMER GROUP · SHARED GROUP ID";
+  wrapper.classList.toggle("finance-group-boundary", state.groupRevealed);
+  wrapper.dataset.groupLabel = `FINANCE GROUP · finance-disputes · ${state.readers.length} ${state.readers.length === 1 ? "MEMBER" : "MEMBERS"}`;
   const visible = state.readers.slice();
   for (const id of visible) {
     const card = document.createElement("div");
     card.className = "finance-member";
     card.dataset.member = id;
-    card.dataset.activity = id === "C" ? "idle" : "idle";
+    card.dataset.activity = "idle";
     const name = document.createElement("strong");
     name.textContent = `Finance ${id}`;
     const meta = document.createElement("small");
     const assigned = state.grouped ? Object.entries(state.assignments).filter(([, member]) => member === id).map(([partition]) => `P${partition}`).join(" + ") : "P0 + P1 · reads full topic";
-    meta.textContent = state.grouped
-      ? assigned || ""
-      : id === "B" && state.readers.includes("B")
-        ? `GROUP · ${groupId(id)} · RESET LATEST`
-        : `GROUP · ${groupId(id)}`;
+    meta.textContent = state.rebalancing ? "WAITING FOR ASSIGNMENT" : assigned ? `ASSIGNED · ${assigned}` : "NO PARTITIONS ASSIGNED";
     const lag = document.createElement("span");
     lag.className = "member-lag";
     const memberState = document.createElement("span");
     memberState.className = "member-state";
-    memberState.textContent = id === "C" ? "" : "WAITING";
+    memberState.textContent = state.rebalancing ? "REBALANCING" : assigned ? "WAITING" : "IDLE";
     const offsetGroup = state.grouped ? "finance-disputes" : groupId(id);
     const memberPartitions = state.grouped
       ? Object.entries(state.assignments).filter(([, member]) => member === id).map(([partition]) => Number(partition))
       : [null];
     const memberLag = memberPartitions.reduce((total, partition) => total + groupLag(offsetGroup, partition), 0);
-    lag.textContent = id === "C" ? "" : `LAG ${memberLag}`;
+    lag.textContent = assigned ? `LAG ${memberLag}` : "LAG —";
     const progress = document.createElement("div");
     progress.className = "member-progress";
     progress.setAttribute("aria-hidden", "true");
@@ -319,7 +356,9 @@ function renderFinanceMembers() {
     card.append(name, meta, lag, memberState, progress);
     const recordLabel = document.createElement("small");
     recordLabel.className = "member-record";
-    recordLabel.textContent = "—";
+    const lastCommit = state.events.findLast(event => event.phase === "commit-ack" && event.member === `finance-${id}`);
+    const lastRecord = lastCommit && state.records.find(record => recordIdentity(record) === lastCommit.record);
+    recordLabel.textContent = lastRecord ? `${recordIdentity(lastRecord)} · ${lastRecord.event === "DisputeCreated" ? "CREATED" : "RESOLVED"}` : "—";
     if (state.outcome === "failed" && state.assignments[1] === id) {
       card.dataset.activity = "error";
       memberState.textContent = "FAILED";
@@ -332,7 +371,10 @@ function renderFinanceMembers() {
     recordDetails.className = "member-records";
     recordDetails.append(recordLabel, recordHistory);
     card.append(recordDetails);
-    if (id === "C") card.classList.add("is-idle");
+    const nextLabel = document.createElement("small");
+    nextLabel.className = "member-next";
+    card.append(nextLabel);
+    if (!assigned && !state.rebalancing) card.classList.add("is-idle");
     wrapper.append(card);
   }
   updateFinanceOutcome();
@@ -343,65 +385,59 @@ function updateFinanceOutcome() {
   status.textContent = state.outcome ? (state.outcome === "failed" ? "FAILED" : "PROCESSED") : state.grouped ? "GROUP ACTIVE" : "READY";
   $("#finance-card").dataset.activity = state.outcome === "failed" ? "failed" : "idle";
   const outcome = $("#finance-outcome");
-  const duplicate = !state.grouped && state.duplicateRecord;
   outcome.hidden = !state.outcome;
   outcome.dataset.outcome = state.outcome;
-  outcome.textContent = state.outcome === "failed" ? "FAILED" : state.outcome === "success" ? "SUCCESS" : "";
-  document.querySelectorAll(".finance-member").forEach((card) => {
-    card.classList.toggle("is-shared-processing", Boolean(duplicate) && card.dataset.member !== "C");
-  });
-}
+  outcome.textContent = state.outcome === "failed" ? "FAILED · APP LOGIC" : state.outcome === "success" ? "SUCCESS" : "";
 
-function showDuplicateRecord(record) {
-  if (state.scene === 1 && !duplicateReady) return;
-  state.duplicateRecord = record;
-  if (state.grouped) return;
-  for (const id of state.readers) {
-    const card = $(`[data-member="${id}"]`);
-    if (!card || id === "C") continue;
-    card.classList.add("is-shared-processing");
-    $(".member-history", card).textContent = `PROCESSED · ${recordIdentity(record)} · ${record.event === "DisputeCreated" ? "CREATED" : "RESOLVED"}`;
-  }
 }
 
 function render() {
+  $("#partition-selection").hidden = state.scene < 6;
+  $(".producer-events").hidden = state.scene >= 6;
   const scene = scenes[state.scene];
   $("#scene-heading").textContent = scene[0];
   $("#scene-counter").textContent = `${state.scene + 1} / ${scenes.length}`;
-  $("#scene-number").textContent = "03";
+  $("#scene-number").textContent = "02";
   $("#prompt-label").textContent = scene[2];
   $("#scene-prompt").textContent = scene[1];
-  $("#consumer-column-note").textContent = state.grouped
-    ? "EXAMPLE PARTITION ASSIGNMENT"
-    : `${state.readers.length + 2} INDEPENDENT GROUPS`;
+  if (state.scene === 5) { $("#prompt-label").textContent = "THE KAFKA WAY"; $("#scene-prompt").textContent = "Assigned members cannot outnumber the subscribed partitions."; }
+  if (state.scene === 4 && !busy) { $("#prompt-label").textContent = "THE KAFKA WAY"; $("#scene-prompt").textContent = "One group shares the work: P0 → A, P1 → B. Each partition has one assigned member."; }
+  if (state.scene === 6 && state.outcome === "failed") { $("#prompt-label").textContent = "WHAT CAN GO WRONG?"; $("#scene-prompt").textContent = "APP LOGIC · Resolved arrived before Created was applied. The failed record remains uncommitted."; }
+  if (state.scene === 7 && state.outcome === "success") { $("#prompt-label").textContent = "THE KAFKA WAY"; $("#scene-prompt").textContent = "Ordering holds within a partition, with unchanged partitioning and ordered processing."; }
+  $("#consumer-column-note").textContent = state.scene === 0 ? "3 INDEPENDENT GROUPS" : "FINANCE · ONE SHARED GROUP";
   $("#group-partition-count")?.remove();
-  $("#producer-state").textContent = state.records.length ? "APPENDED" : "READY";
-  $("#producer-note").textContent = state.scene === 5
+  if (!$(".event-card.is-active")) $("#producer-state").textContent = state.records.length ? "APPENDED" : "READY";
+  $("#producer-note").textContent = state.scene === 6
     ? "One possible unkeyed placement"
-    : state.scene === 6
+    : state.scene === 7
       ? "Two sends · same key"
-      : state.scene === 2 ? "Higher input rate · both partitions" : "Does not wait for consumers";
+      : state.scene >= 3 ? "Illustrative producer partitioning · both partitions" : "Does not wait for consumers";
   $("#finance-card").dataset.activity = "idle";
   updateFinanceOutcome();
   updateRecordWindow();
   updateOffsets();
-  $("#message-state").textContent = state.scene >= 1 ? "IDLE" : "WAITING";
-  $("#orders-state").textContent = state.scene >= 1 ? "IDLE" : "WAITING";
+
   $("#orders-card").classList.toggle("is-deemphasized", state.scene >= 1);
   $("#message-card").classList.toggle("is-deemphasized", state.scene >= 1);
   $("#group-rate")?.remove();
-  $("#flow-state span").textContent = busy || liveTrafficPromise ? paused ? "PAUSED" : "PLAYING" : "LIVE";
+  $("#flow-state span").textContent = document.hidden ? "PAUSED · tab hidden" : paused ? "PAUSED" : busy ? "PLAYING" : "LIVE";
   $("#flow-state").classList.toggle("is-paused", paused);
-  $("#flow-state").classList.toggle("is-playing", (busy || liveTrafficPromise) && !paused);
+  $("#flow-state").classList.toggle("is-playing", (busy) && !paused);
   $("#previous-button").disabled = state.scene === 0;
-  $("#next-button").disabled = state.scene === scenes.length - 1;
+  $("#next-button").disabled = busy || state.scene === scenes.length - 1;
+  $("#next-button").title = busy ? "Transition in progress; wait for this step to finish" : "Advance to the next scene";
   $("#next-button").textContent = nextLabels[state.scene];
-  $("#pause-button").disabled = !busy && !liveTrafficPromise;
+  $("#pause-button").disabled = false;
   $("#reset-button").disabled = false;
-  $("#replay-unkeyed").disabled = !orderingCheckpoint;
-  $("#replay-keyed").disabled = !orderingCheckpoint;
+  $("#replay-unkeyed").disabled = false;
+  $("#replay-keyed").disabled = false;
+  $("#replay-scene").hidden = state.scene >= 6;
+  $("#replay-unkeyed").hidden = false;
+  $("#replay-keyed").hidden = false;
   $("#pause-button").textContent = paused ? "▶ Resume" : "Ⅱ Pause";
   $("#pause-button").setAttribute("aria-pressed", String(paused));
+  if (state.step) { $("#prompt-label").textContent = state.rebalancing ? "REBALANCING" : "CURRENT STEP"; $("#scene-prompt").textContent = state.step; }
+  if (state.checkpoint && !busy && !paused) $("#flow-state span").textContent = "SCENE READY";
   requestAnimationFrame(drawRoutes);
 }
 
@@ -409,13 +445,58 @@ function appendRecord(event, partition, dispute, key = null) {
   const offset = state.records.filter((record) => record.partition === partition).length;
   const record = { event, partition, dispute, key, offset };
   state.records.push(record);
+  state.events.push({phase:"append",scene:state.scene,record:recordIdentity(record),event,dispute,partition,key});
   updateRecordWindow();
   updateFinanceLagUI();
   return record;
 }
 
+async function showPartitionSelection(event, partition, key) {
+  const signal = flowController.signal;
+  const source = $("#selection-key"), method = $("#selection-method"), result = $("#selection-result");
+  const isKeyed = key !== null;
+  document.querySelectorAll(".event-card.is-active").forEach(card => card.classList.remove("is-active"));
+  const card = $(`[data-event="${event}"]`);
+  card.classList.add("is-active");
+  $("small", card).textContent = isKeyed ? `SELECTING · KEY ${key}` : "SELECTING · NO KEY";
+  const eventName = event === "DisputeCreated" ? "Dispute Created" : "Dispute Resolved";
+  $("#selection-event").textContent = eventName;
+  $("#selection-output-event").textContent = eventName;
+  source.textContent = isKeyed ? `Key supplied: ${key}` : "No key supplied";
+  method.textContent = isKeyed ? "Hash key" : "Select partition";
+  result.textContent = "P?";
+  $("#selection-note").textContent = isKeyed ? "Same key + same partition count → same partition" : "One possible distribution · Related messages may go to different partitions";
+  for (const phase of ["input", "method", "selected"]) {
+    assertActive(signal);
+    source.dataset.active = String(phase === "input");
+    method.dataset.active = String(phase === "method");
+    result.dataset.active = String(phase === "selected");
+    if (phase === "method") method.textContent = isKeyed ? "Hash key" : "Select partition";
+    if (phase === "selected") {
+      result.textContent = `P${partition}`;
+      $("#selection-output-event").textContent = `${eventName} · ready to send`;
+    }
+    $("#producer-state").textContent = phase === "selected" ? "PARTITION SELECTED" : "SELECTING PARTITION";
+    state.events.push({phase:"partition-selection",stage:phase,event,key,partition,method:isKeyed?"hash":"sticky"});
+    drawRoutes();
+    const link = phase === "input" ? $("#selection-input-link") : phase === "method" ? $("#selection-output-link") : null;
+    if (link) {
+      $("i", link).dataset.label = `${event === "DisputeCreated" ? "CREATED" : "RESOLVED"}${phase === "method" ? ` · P${partition}` : ""}`;
+      link.classList.add("is-travelling");
+      try { await playbackControls.wait(PACKET_DURATION, { signal, progress: value => { link.style.setProperty("--travel", `${value * 100}%`); } }); }
+      finally { link.classList.remove("is-travelling"); }
+    } else await wait(650);
+  }
+  assertActive(signal);
+}
+
 async function publish(event, partition, dispute, key = null) {
   const signal = flowController.signal;
+  if (state.scene >= 6) {
+    if (key !== null) partition = partitionForKey(key, state.partitionCount);
+    await showPartitionSelection(event, partition, key);
+    assertActive(signal);
+  }
   $("#producer-state").textContent = "PUBLISHING";
   const producerEvent = $(`[data-event="${event}"]`);
   const detail = $("small", producerEvent);
@@ -424,7 +505,7 @@ async function publish(event, partition, dispute, key = null) {
   if (detail) detail.textContent = `SENDING · ${dispute}${key ? ` · KEY ${key}` : " · NO KEY"}`;
   await new Promise(requestAnimationFrame);
   assertActive(signal);
-  await fly(producerRoute, event === "DisputeCreated" ? "SEND · CREATED" : "SEND · RESOLVED");
+  await fly(producerRoute, `${event === "DisputeCreated" ? "SEND · CREATED" : "SEND · RESOLVED"}${state.scene >= 6 ? ` · P${partition}` : ""}`);
   const record = appendRecord(event, partition, dispute, key);
   if (detail) detail.textContent = `P${partition}:${record.offset} · ${dispute}${key ? ` · KEY ${key}` : ""}`;
   $("#producer-state").textContent = "APPENDED";
@@ -436,19 +517,14 @@ async function progress(target, duration = 500) {
   const card = targetElement(target);
   const fill = target.startsWith("finance-") ? $(".member-progress i", card) : $(".progress-fill", card);
   const activeCard = target.startsWith("finance-") ? card : card;
-  activeCard.classList.add("is-processing");
+  if (state.scene === 0 || target.startsWith("finance-")) activeCard.classList.add("is-processing");
   if (target.startsWith("finance-")) {
     card.dataset.activity = "processing";
     $(".member-state", card).textContent = "PROCESSING";
   }
-  const stall = target === "finance-A" && state.scene === 0 && laggedMembers.has("A");
-  const animation = animate(fill, { scaleX: [0, stall ? 0.35 : 1] }, { duration: reducedMotion ? 0.1 : duration / 1000, ease: "linear" });
+  const animation = animate(fill, { scaleX: [0, 1] }, { duration: reducedMotion ? 0.1 : duration / 1000, ease: "linear" });
   updateFinanceLagUI();
   await finishAnimation(animation);
-  if (stall) {
-    $(".member-state", card).textContent = "LAGGING";
-    while (true) await wait(100);
-  }
   fill.style.transform = "scaleX(0)";
   activeCard.classList.remove("is-processing");
   if (target.startsWith("finance-")) updateFinanceLagUI();
@@ -456,7 +532,6 @@ async function progress(target, duration = 500) {
 
 async function readRecord(record, target, group, { processTime = 420, commit = true, poll = true, existing = false, onProcessing, batchRecords = null } = {}) {
   const signal = flowController.signal;
-  if (state.scene === 0 && target === "finance-A" && record.offset >= 3) laggedMembers.add("A");
   const dataRoute = routes.data.get(target);
   const card = targetElement(target);
   const status = target.startsWith("finance-") ? $(".member-state", card) : $(`#${target}-state`);
@@ -464,8 +539,9 @@ async function readRecord(record, target, group, { processTime = 420, commit = t
   if (poll) await fly(dataRoute, `POLL P${record.partition}`, { reverse: true });
   const eventLabel = record.event === "DisputeCreated" ? "CREATED" : "RESOLVED";
   const identity = batchRecords ? `P${record.partition}:${batchRecords[0].offset}–${record.offset}` : recordIdentity(record);
-  await fly(dataRoute, `${existing ? "EXISTING · " : ""}${batchRecords ? "BATCH" : "RECORD"} · ${eventLabel} · ${identity}`);
-  card.classList.add("is-receiving");
+  await fly(dataRoute, `${batchRecords ? "BATCH · " : ""}${eventLabel} · ${identity}`);
+  state.events.push({phase:"received",scene:state.scene,member:target,group,record:recordIdentity(record)});
+  if (state.scene === 0 || target.startsWith("finance-")) card.classList.add("is-receiving");
   if (status) status.textContent = "PROCESSING";
   if (target.startsWith("finance-")) {
     card.dataset.activity = "processing";
@@ -481,12 +557,20 @@ async function readRecord(record, target, group, { processTime = 420, commit = t
     for (const entry of batchRecords ?? [record]) if (!applied.includes(entry.dispute)) applied.push(entry.dispute);
   }
   if (!commit) {
+    state.events.push({phase:"rejected",scene:state.scene,member:target,group,record:recordIdentity(record)});
     card.dataset.activity = "error";
     if (status) status.textContent = "FAILED";
     return;
   }
+  for (const entry of batchRecords ?? [record]) state.events.push({phase:"processed",scene:state.scene,member:target,group,record:recordIdentity(entry)});
+  state.acknowledged[group] ??= [...state.offsets[group]];
+  // Teaching abstraction: the successful offset commit completes without packet animation.
   state.offsets[group][record.partition] = Math.max(state.offsets[group][record.partition], record.offset + 1);
+  state.events.push({phase:"commit-stored",scene:state.scene,member:target,group,record:recordIdentity(record),next:record.offset+1});
+  state.acknowledged[group][record.partition] = state.offsets[group][record.partition];
+  state.events.push({phase:"commit-ack",scene:state.scene,member:target,group,record:recordIdentity(record),next:record.offset+1});
   updateOffsets();
+  updateRecordWindow();
   if (status) status.textContent = "WAITING";
   if (target.startsWith("finance-")) {
     const member = target.slice("finance-".length);
@@ -497,89 +581,62 @@ async function readRecord(record, target, group, { processTime = 420, commit = t
       if (!processed.includes(processedIdentity)) processed.push(processedIdentity);
     }
     if (processed.length > 24) processed.splice(0, processed.length - 24);
-    const otherGroups = state.readers.filter((reader) => reader !== member).map((reader) => state.grouped ? "finance-disputes" : groupId(reader));
-    if (!state.grouped && otherGroups.some((otherGroup) => otherGroup !== groupIdForMember && (state.processedByGroup[otherGroup] ?? []).includes(identity))) {
-      showDuplicateRecord(record);
-    }
+
   }
   updateFinanceLagUI();
 }
 
-async function readFastGroups(record) {
-  await Promise.all([
-    readRecord(record, "orders", "orders", { processTime: 360 }),
-    readRecord(record, "message", "message", { processTime: 420 }),
-  ]);
+// Live traffic remains independent of Finance's pace and group coordination.
+async function consumeContinuously(group, target, slow = false) {
+  const signal = flowController.signal;
+  while (true) {
+    assertActive(signal);
+    const partitions = slow
+      ? Object.entries(state.assignments).filter(([, member]) => `finance-${member}` === target).map(([partition]) => Number(partition))
+      : Array.from({length:state.partitionCount}, (_, partition) => partition);
+    const record = nextGroupRecord(group, partitions);
+    if (!record) { await wait(50); continue; }
+    const batch = slow ? [record] : state.records.filter(entry => entry.partition === record.partition && entry.offset >= record.offset);
+    await readRecord(batch.at(-1), target, group, {
+      processTime: slow ? 6500 : 360 * batch.length,
+      batchRecords: batch.length > 1 ? batch : null,
+    });
+    assertActive(signal);
+    if (slow && state.scene === 0 && busy) {
+      busy = false;
+      history[0] = clone(state);
+      render();
+    }
+  }
+}
+
+function startFinanceTraffic() {
+  Promise.all(state.readers.map(member => consumeContinuously("finance-disputes", `finance-${member}`, true)))
+    .catch(error => { if (error.name !== "AbortError") console.error(error); });
+}
+
+function startOtherTraffic() {
+  const signal = flowController.signal;
+  const producer = async () => {
+    while (true) {
+      assertActive(signal);
+      const index = state.records.length;
+      const partition = state.partitionCount === 2 && !state.rebalancing && state.assignments[1] ? index % 2 : 0;
+      await publish("DisputeCreated", partition, String(900000 + index));
+      await wait(900);
+    }
+  };
+  Promise.all([producer(), consumeContinuously("orders", "orders"), consumeContinuously("message", "message")])
+    .catch(error => { if (error.name !== "AbortError") console.error(error); });
 }
 
 async function runIntro() {
-  const signal = flowController.signal;
-  busy = true;
-  render();
-  state.partitionCount = 1;
-  state.records = [];
-  state.offsets = { orders: [0, 0], message: [0, 0], "finance-disputes": [0, 0] };
-  state.processedByGroup = {};
-  state.appliedByGroup = {};
-  state.readers = ["A"];
-  state.grouped = false;
-  state.outcome = "";
+  busy = (state.offsets["finance-disputes"]?.[0] ?? 0) === 0;
+  state.checkpoint = false;
   renderFinanceMembers();
   render();
-  for (let index = 0; index < 3; index += 1) {
-    assertActive(signal);
-    const record = await publish("DisputeCreated", 0, ["49328", "49329", "49330", "49331"][index]);
-    const fast = readFastGroups(record);
-    await Promise.all([fast, readRecord(record, "finance-A", "finance-disputes", { processTime: 520 })]);
-    if (index === 2) await wait(180);
-  }
-  assertActive(signal);
-  laggedMembers.add("A");
-  state.scene = 0;
-  busy = false;
-  history.splice(0, history.length, clone(state));
-  render();
-  startLaggingTraffic();
-}
-
-async function runLaggingTraffic() {
-  let sequence = 0;
-  while (!stopLiveTraffic) {
-    const record = await publish("DisputeCreated", 0, `live-${sequence + 1}`);
-    sequence += 1;
-    await readFastGroups(record);
-    await wait(1200, true);
-  }
-}
-
-function startLaggingTraffic() {
-  if (liveTrafficPromise) return;
-  stopLiveTraffic = false;
-  const signal = flowController.signal;
-  liveTrafficPromise = Promise.all([
-    runLaggingTraffic(),
-    consumeGroup("finance-disputes", "finance-A", [0], 4000),
-  ]).catch((error) => { if (error.name !== "AbortError") console.error(error); }).finally(() => {
-    if (signal.aborted) return;
-    liveTrafficPromise = null;
-    if (!busy) render();
-  });
-  render();
-}
-
-async function stopLaggingTraffic() {
-  cancelFlow();
-}
-
-function startLiveFlow(tasks) {
-  const signal = flowController.signal;
-  stopLiveTraffic = false;
-  liveTrafficPromise = Promise.all(tasks).catch((error) => { if (error.name !== "AbortError") console.error(error); }).finally(() => {
-    if (signal.aborted) return;
-    liveTrafficPromise = null;
-    if (!busy) render();
-  });
-  render();
+  startOtherTraffic();
+  startFinanceTraffic();
 }
 
 function nextGroupRecord(group, partitions, preferredPartitions = []) {
@@ -592,275 +649,179 @@ function nextGroupRecord(group, partitions, preferredPartitions = []) {
   return null;
 }
 
-async function produceContinuously(partitionCount, prefix, delay) {
-  const signal = flowController.signal;
-  let sequence = 0;
-  while (!stopLiveTraffic) {
-    assertActive(signal);
-    const partition = sequence % partitionCount;
-    const record = await publish("DisputeCreated", partition, `${prefix}-${sequence + 1}`);
-    sequence += 1;
-    await wait(delay, true);
-    if (stopLiveTraffic) return record;
-  }
+function setStep(text) {
+  state.step = text;
+  state.events.push({ phase: "teaching-step", scene: state.scene, text });
+  render();
 }
 
-async function consumeGroup(group, target, partitions, processTime, { preferredPartitions = [], existingBefore, onProcessing } = {}) {
-  const signal = flowController.signal;
-  let partitionOrder = [...preferredPartitions, ...partitions.filter((partition) => !preferredPartitions.includes(partition))];
-  while (!stopLiveTraffic) {
-    assertActive(signal);
-    const record = nextGroupRecord(group, partitionOrder);
-    if (!record) {
-      await wait(50, true);
-      continue;
-    }
-    const pending = state.grouped ? state.records.filter((entry) => entry.partition === record.partition && entry.offset >= record.offset &&
-      (!existingBefore || record.offset >= existingBefore[record.partition] || entry.offset < existingBefore[record.partition])).slice(0, 4) : [];
-    const batch = pending.length > 1 ? pending : null;
-    const delivered = batch ? batch.at(-1) : record;
-    await readRecord(delivered, target, group, {
-      processTime: (typeof processTime === "function" ? processTime(record) : processTime) * (batch?.length ?? 1),
-      batchRecords: batch,
-      existing: existingBefore && record.offset < existingBefore[record.partition],
-      onProcessing: (current) => onProcessing?.(current),
-    });
-    partitionOrder = [...partitionOrder.filter((partition) => partition !== record.partition), record.partition];
-  }
+async function reveal(element) {
+  await finishAnimation(animate(element, { opacity: [0, 1], scale: [0.94, 1] }, {
+    duration: playbackControls.duration(1300) / 1000,
+    ease: "easeOut", onUpdate: drawRoutes,
+  }));
+  drawRoutes();
 }
 
-function startIndependentFinanceFlow({ partitionCount, prefix, delay, priorities = {}, processTimes = {}, onProcessing } = {}) {
-  stopLiveTraffic = false;
-  const partitions = Array.from({ length: partitionCount }, (_, index) => index);
-  const signal = flowController.signal;
-  const firstPublication = publish("DisputeCreated", 0, `${prefix}-opening`);
-  startLiveFlow([
-    firstPublication.then(() => { assertActive(signal); return produceContinuously(partitionCount, prefix, delay); }),
-    firstPublication.then(() => { assertActive(signal); return consumeGroup("finance-disputes", "finance-A", partitions, processTimes.A ?? 620, {
-      preferredPartitions: priorities.A ?? [],
-      onProcessing: (record) => onProcessing?.("A", record),
-    }); }),
-    firstPublication.then(() => { assertActive(signal); return consumeGroup("finance-copy-b", "finance-B", partitions, processTimes.B ?? 620, {
-      preferredPartitions: priorities.B ?? [],
-      onProcessing: (record) => onProcessing?.("B", record),
-    }); }),
-  ]);
+async function revealGroup() {
+  state.groupRevealed = true;
+  renderFinanceMembers();
+  setStep("This is the existing Finance group — currently one member, assigned P0.");
+  await reveal($("#finance-members"));
+  await wait(700);
+  state.step = "";
+  state.checkpoint = true;
 }
 
-function startGroupedFinanceFlow({ partitionCount, prefix, delay, readers = ["A", "B"], existingBefore, onProcessing } = {}) {
-  stopLiveTraffic = false;
-  const signal = flowController.signal;
-  const firstPublication = publish("DisputeCreated", 0, `${prefix}-opening`);
-  const tasks = [firstPublication.then(async () => {
-    assertActive(signal);
-    if (state.scene === 4) await wait(delay);
-    assertActive(signal);
-    return produceContinuously(partitionCount, prefix, delay);
-  })];
-  for (const member of readers) {
-    const partition = Number(Object.entries(state.assignments).find(([, assigned]) => assigned === member)?.[0]);
-    if (!Number.isInteger(partition) || partition >= partitionCount) continue;
-    tasks.push(firstPublication.then(() => { assertActive(signal); return consumeGroup("finance-disputes", `finance-${member}`, [partition], 620, {
-      existingBefore,
-      onProcessing: (record) => onProcessing?.(member, record),
-    }); }));
+// Illustrative classic-group rebalance: stop data traffic, show coordination,
+// then reveal each assignment separately. This is not a protocol packet trace.
+async function rebalance(assignments) {
+  state.rebalancing = true;
+  state.assignments = {};
+  renderFinanceMembers();
+  setStep("Finance pauses for reassignment. Production and the other groups keep working.");
+  $("#coordinator").classList.add("is-active");
+  await wait(1000);
+  for (const [partition, member] of Object.entries(assignments)) {
+    setStep(`Assign P${partition} to Finance ${member}.`);
+    await fly(routes.control.get(`finance-${member}`), `ASSIGN P${partition} → ${member}`);
+    state.assignments[partition] = member;
+    state.events.push({phase:"assigned",scene:state.scene,partition:Number(partition),member});
+    const card = targetElement(`finance-${member}`);
+    $("small", card).textContent = `ASSIGNED · P${partition}`;
+    $(".member-state", card).textContent = "ASSIGNED";
+    await finishAnimation(animate(card, { backgroundColor: ["#ede6fa", "#ffffff"] }, {duration: playbackControls.duration(800) / 1000}));
+    updateOffsets();
   }
-  startLiveFlow(tasks);
+  state.rebalancing = false;
+  $("#coordinator").classList.remove("is-active");
+  renderFinanceMembers();
+  state.step = "";
+  render();
+  $("#coordinator-state").textContent = "PARTITIONS ASSIGNED";
+  await wait(500);
 }
 
 async function addReader() {
-  const signal = flowController.signal;
-  duplicateReady = false;
-  if (groupLag("finance-disputes")) laggedMembers.add("A");
   state.readers.push("B");
-  state.offsets["finance-copy-b"] = [null, null];
-  state.starts["finance-copy-b"] = [state.records.filter((record) => record.partition === 0).length, 0];
-  state.processedByGroup["finance-copy-b"] = [];
   renderFinanceMembers();
-  render();
-  await new Promise(requestAnimationFrame);
-  assertActive(signal);
-  startIndependentReaderFlow(signal);
-}
-
-function startIndependentReaderFlow(signal) {
-  const liveFlow = (async () => {
-    for (let index = 0; index < 2; index += 1) {
-      const record = await publish("DisputeCreated", 0, `finance-b-start-${index + 1}`);
-      await readRecord(record, "finance-B", "finance-copy-b", { processTime: 420 });
-    }
-    let recoveryDone = false;
-    const recoverA = async () => {
-      while (groupLag("finance-disputes")) {
-        assertActive(signal);
-        const pending = state.records.filter((record) => record.partition === 0 && record.offset >= (state.offsets["finance-disputes"][0] ?? 0));
-        const batch = pending.length > 1 ? pending : null;
-        const record = batch ? batch.at(-1) : pending[0];
-        await readRecord(record, "finance-A", "finance-disputes", { processTime: batch ? 5500 : 1600, existing: true, batchRecords: batch });
-      }
-      recoveryDone = true;
-    };
-    await Promise.all([
-      recoverA(),
-      (async () => {
-        while (!recoveryDone) {
-          assertActive(signal);
-          const record = await publish("DisputeCreated", 0, `finance-b-recovery-${state.records.length}`);
-          await readRecord(record, "finance-B", "finance-copy-b", { processTime: 420 });
-          if (!recoveryDone) await wait(3500);
-        }
-      })(),
-    ]);
-    const remaining = nextGroupRecord("finance-disputes", [0]);
-    if (remaining) await readRecord(remaining, "finance-A", "finance-disputes", { processTime: 900, existing: true });
-    laggedMembers.delete("A");
-    duplicateReady = true;
-    await startDuplicateProcessing(signal);
-  })();
-  startLiveFlow([liveFlow]);
-}
-
-async function startDuplicateProcessing(signal) {
-  while (true) {
-    assertActive(signal);
-    const record = await publish("DisputeCreated", 0, `finance-pair-${state.records.length}`);
-    await Promise.all([
-      readRecord(record, "finance-A", "finance-disputes", { processTime: 620 }),
-      readRecord(record, "finance-B", "finance-copy-b", { processTime: 620 }),
-    ]);
-    await wait(800);
-  }
+  setStep("Finance B joins the same finance-disputes group.");
+  await reveal(targetElement("finance-B"));
+  await fly(routes.control.get("finance-B"), "JOIN GROUP · B", { reverse: true });
+  await rebalance({0:"A"});
+  state.step = "One partition, two members: Finance A owns P0; Finance B has no partition and stays idle.";
+  state.checkpoint = true;
 }
 
 async function addPartition() {
-  const signal = flowController.signal;
   state.partitionCount = 2;
   state.offsets["finance-disputes"][1] = null;
-  state.offsets["finance-copy-b"][1] = null;
+  state.acknowledged["finance-disputes"][1] = null;
   state.starts["finance-disputes"] = [0, 0];
-  state.starts["finance-copy-b"][1] = 0;
-  state.duplicateRecord = null;
-  renderFinanceMembers();
-  render();
+  setStep("Add an empty partition P1. Existing records stay in P0.");
   const row = $('[data-partition="1"]');
-  const reveal = animate(row, { opacity: [0, 1], y: [10, 0] }, { duration: reducedMotion ? 0.1 : 0.55, ease: "easeOut" });
-  await finishAnimation(reveal);
-  await new Promise(requestAnimationFrame);
-  assertActive(signal);
-  laggedMembers.add("A");
-  laggedMembers.add("B");
-  startIndependentFinanceFlow({
-    partitionCount: 2,
-    prefix: "finance-p1-live",
-    delay: 500,
-  });
+  row.classList.add("is-new-partition");
+  await reveal(row);
+  await wait(800);
+  row.classList.remove("is-new-partition");
+  await rebalance({0:"A",1:"B"});
+  state.step = "P0 → Finance A · P1 → Finance B. New records use both partitions; the old backlog stays in P0.";
+  state.checkpoint = true;
 }
 
-async function formGroup() {
-  const signal = flowController.signal;
-  const existingBefore = [0, 1].map((partition) => state.records.filter((record) => record.partition === partition).length);
-  state.grouped = true;
-  state.readers = ["A", "B"];
-  state.duplicateRecord = null;
-  renderFinanceMembers();
-  render();
-  const boundary = $("#finance-members");
-  await finishAnimation(animate(boundary, { opacity: [0.45, 1] }, { duration: reducedMotion ? 0.1 : 0.5 }));
-  $("#coordinator-state").textContent = "REBALANCING MEMBERS";
-  await wait(700);
-  $("#coordinator-state").textContent = "PARTITIONS ASSIGNED";
-  await new Promise(requestAnimationFrame);
-  assertActive(signal);
-  startGroupedFinanceFlow({
-    partitionCount: 2,
-    prefix: "finance-group-live",
-    delay: 500,
-    existingBefore,
-  });
+async function showParallel() {
+  setStep("Live traffic: Finance A reads P0 and Finance B reads P1. Orders and Message Center continue independently.");
+  state.checkpoint = false;
 }
 
 async function addIdleMember() {
-  const signal = flowController.signal;
-  const existingBefore = [0, 1].map((partition) => state.records.filter((record) => record.partition === partition).length);
   state.readers.push("C");
   renderFinanceMembers();
-  render();
-  startGroupedFinanceFlow({ partitionCount: 2, prefix: "finance-c-live", delay: 3500, readers: ["A", "B", "C"], existingBefore });
-  const card = $('[data-member="C"]');
-  const reveal = animate(card, { opacity: [0, 0.62], y: [8, 0] }, { duration: reducedMotion ? 0.1 : 0.5, ease: "easeOut" });
-  await finishAnimation(reveal);
-  assertActive(signal);
+  setStep("Finance C joins the same group. There are still only two partitions.");
+  await reveal(targetElement("finance-C"));
+  await fly(routes.control.get("finance-C"), "JOIN GROUP · C", {reverse:true});
+  await rebalance({0:"A",1:"B"});
+  state.checkpoint = true;
+}
+
+function startOrderingExample(keyed) {
+  // New teaching example, not a Kafka topic/offset reset during normal operation.
+  state.records = [];
+  state.events = [];
+  state.offsets = { orders: [0, 0], message: [0, 0], "finance-disputes": [0, 0] };
+  state.acknowledged = { orders: [0, 0], message: [0, 0], "finance-disputes": [0, 0] };
+  state.starts = {};
+  state.processedByGroup = {};
+  state.appliedByGroup = {};
+  state.outcome = "";
+  state.checkpoint = false;
+  state.rebalancing = false;
+  restoreProducerEvents();
+  renderFinanceMembers();
+  setStep(keyed ? "NEW EXAMPLE · The producer hashes the same key to select the same partition." : "NEW EXAMPLE · One possible unkeyed placement: Created goes to P0, Resolved to P1.");
 }
 
 async function showUnkeyed() {
-  state.outcome = "";
+  startOrderingExample(false);
   orderingCheckpoint = clone(state);
+  $("#replay-unkeyed").disabled = false;
+  $("#replay-keyed").disabled = false;
   const created = await publish("DisputeCreated", 0, "49340");
   const resolved = await publish("DisputeResolved", 1, "49340");
   await readRecord(resolved, "finance-B", "finance-disputes", { processTime: 700, commit: false, poll: true });
   state.outcome = "failed";
   $("#finance-outcome").hidden = false;
   $("#finance-outcome").dataset.outcome = "failed";
-  $("#finance-outcome").textContent = "FAILED";
+  $("#finance-outcome").textContent = "FAILED · APP LOGIC";
+  $("#prompt-label").textContent = "WHAT CAN GO WRONG?";
+  $("#scene-prompt").textContent = "APP LOGIC · Resolved arrived before Created was applied. The failed record remains uncommitted.";
   await readRecord(created, "finance-A", "finance-disputes", { processTime: 500 });
-  state.scene = 5;
+  state.step = "";
+  state.scene = 6;
 }
 
 async function showKeyed() {
   const signal = flowController.signal;
-  state.outcome = "";
-  renderFinanceMembers();
-  render();
+  startOrderingExample(true);
   await new Promise(requestAnimationFrame);
   assertActive(signal);
-  const created = await publish("DisputeCreated", 0, "49341", "dispute-49341");
-  const resolved = await publish("DisputeResolved", 0, "49341", "dispute-49341");
-  await readRecord(created, "finance-A", "finance-disputes", { processTime: 650 });
-  await readRecord(resolved, "finance-A", "finance-disputes", { processTime: 650 });
+  const partition = partitionForKey("dispute-49341", state.partitionCount);
+  const created = await publish("DisputeCreated", partition, "49341", "dispute-49341");
+  const resolved = await publish("DisputeResolved", partition, "49341", "dispute-49341");
+  await readRecord(created, `finance-${state.assignments[partition]}`, "finance-disputes", { processTime: 650 });
+  await readRecord(resolved, `finance-${state.assignments[partition]}`, "finance-disputes", { processTime: 650 });
   state.outcome = "success";
   updateFinanceOutcome();
-  state.scene = 6;
+  $("#prompt-label").textContent = "THE KAFKA WAY";
+  $("#scene-prompt").textContent = "Ordering holds within a partition, with unchanged partitioning and ordered processing.";
+  state.step = "";
+  state.scene = 7;
 }
 
-async function drainAssignedRecords() {
-  const existingBefore = [0, 1].map((partition) => state.records.filter((record) => record.partition === partition).length);
-  for (;;) {
-    const pending = [0, 1].map((partition) => nextGroupRecord("finance-disputes", [partition])).filter(Boolean);
-    if (!pending.length) return;
-    const ready = pending.filter((record) => record.event === "DisputeCreated" || (state.appliedByGroup["finance-disputes"] ?? []).includes(record.dispute));
-    if (!ready.length) throw new Error("Pending Resolved has no applied Created event; cannot advance its offset");
-    await Promise.all(ready.map((record) => readRecord(
-      record,
-      `finance-${state.assignments[record.partition]}`,
-      "finance-disputes",
-      { processTime: 360, existing: record.offset < existingBefore[record.partition] },
-    )));
-  }
-}
 
 async function advance() {
   if (busy) return;
   if (memberTransitionSignal && !memberTransitionSignal.aborted) return;
   if (state.scene >= scenes.length - 1) return;
   const currentScene = state.scene;
-  const transitions = [addReader, addPartition, formGroup, addIdleMember, showUnkeyed, showKeyed];
+  const transitions = [revealGroup, addReader, addPartition, showParallel, addIdleMember, showUnkeyed, showKeyed];
   const transition = transitions[currentScene];
   history[currentScene] = clone(state);
   cancelFlow();
+  restoreProducerEvents();
   const signal = flowController.signal;
-  if (currentScene === 3) memberTransitionSignal = signal;
+  if (currentScene === 4) memberTransitionSignal = signal;
   busy = true;
   try {
-    if (currentScene >= 4) {
-      render();
-      await drainAssignedRecords();
-      assertActive(signal);
-    }
+    state.step = "";
+    state.checkpoint = false;
     state.scene = currentScene + 1;
     render();
     history[state.scene] = clone(state);
+    if (state.scene < 6) startOtherTraffic();
     await transition();
     assertActive(signal);
+    if (state.scene < 6) { state.checkpoint = false; startFinanceTraffic(); }
     history[state.scene] = clone(state);
   } catch (error) {
     if (error.name !== "AbortError") console.error(error);
@@ -874,7 +835,8 @@ async function previous() {
   if (state.scene === 0) return;
   cancelFlow();
   busy = false;
-  const restored = history[state.scene - 1];
+  const restored = state.scene === 6 && orderingReturn ? orderingReturn : history[state.scene - 1];
+  if (state.scene === 6) orderingReturn = null;
   Object.assign(state, clone(restored));
   history.splice(state.scene + 1);
   restoreProducerEvents();
@@ -882,81 +844,81 @@ async function previous() {
   renderFinanceMembers();
   busy = false;
   render();
-  startSceneTraffic();
-}
-
-function startSceneTraffic() {
-  if (state.scene === 0) return startLaggingTraffic();
-  if (state.scene === 1 || state.scene === 2) {
-    return startIndependentFinanceFlow({
-      partitionCount: state.partitionCount,
-      prefix: `finance-resume-${state.scene}`,
-      delay: state.scene === 1 ? 3500 : 500,
-    });
-  }
-  if (state.scene === 3 || state.scene === 4) {
-    const existingBefore = [0, 1].map((partition) => state.records.filter((record) => record.partition === partition).length);
-    return startGroupedFinanceFlow({
-      partitionCount: state.partitionCount,
-      prefix: `finance-group-resume-${state.scene}`,
-      delay: state.scene === 4 ? 3500 : 500,
-      readers: state.scene === 4 ? ["A", "B", "C"] : ["A", "B"],
-      existingBefore,
-    });
+  if (state.scene === 0) {
+    runIntro().catch(error => { if (error.name !== "AbortError") console.error(error); });
+  } else if (state.scene < 6) {
+    state.checkpoint = false; startOtherTraffic(); startFinanceTraffic();
   }
 }
 
 async function reset() {
   cancelFlow();
-  paused = false;
-  animations.forEach((animation) => animation.play());
-  resumeWaiters.splice(0).forEach((resume) => resume());
+  paused = playbackControls.paused;
   Object.assign(state, {
     scene: 0,
     partitionCount: 1,
     records: [],
     offsets: { orders: [0, 0], message: [0, 0], "finance-disputes": [0, 0] },
     readers: ["A"],
-    grouped: false,
-    assignments: { 0: "A", 1: "B" },
+    grouped: true,
+    groupRevealed: false,
+    rebalancing: false,
+    step: "",
+    checkpoint: false,
+    assignments: { 0: "A" },
     outcome: "",
-    duplicateRecord: null,
-    processedByGroup: {},
+      processedByGroup: {},
     appliedByGroup: {},
     starts: {},
+    acknowledged: {},
+    events: [],
   });
   orderingCheckpoint = null;
+  orderingReturn = null;
   laggedMembers.clear();
-  duplicateReady = false;
   restoreProducerEvents();
   history.length = 0;
   busy = false;
   try { await runIntro(); } catch (error) { if (error.name !== "AbortError") console.error(error); }
 }
 
-function togglePause() {
-  paused = !paused;
-  animations.forEach((animation) => paused ? animation.pause() : animation.play());
-  $("#pause-button").textContent = paused ? "▶ Resume" : "Ⅱ Pause";
-  $("#pause-button").setAttribute("aria-pressed", String(paused));
-  $("#flow-state span").textContent = paused ? "PAUSED" : busy || liveTrafficPromise ? "PLAYING" : "LIVE";
+playbackControls.subscribe(({paused: value}) => {
+  paused = value;
+  $("#flow-state span").textContent = document.hidden ? "PAUSED · tab hidden" : paused ? "PAUSED" : busy ? "PLAYING" : state.checkpoint ? "SCENE READY" : "LIVE";
   $("#flow-state").classList.toggle("is-paused", paused);
-  $("#flow-state").classList.toggle("is-playing", (busy || liveTrafficPromise) && !paused);
-  if (!paused) resumeWaiters.splice(0).forEach((resume) => resume());
-}
-
+  $("#flow-state").classList.toggle("is-playing", (busy) && !paused);
+});
 $("#next-button").addEventListener("click", advance);
 $("#previous-button").addEventListener("click", previous);
 $("#reset-button").addEventListener("click", reset);
-$("#pause-button").addEventListener("click", togglePause);
+$("#replay-scene").addEventListener("click", async () => {
+  if (state.scene === 0) return reset();
+  const scene = state.scene;
+  cancelFlow();
+  Object.assign(state, clone(history[scene - 1]));
+  busy = false;
+  restoreProducerEvents();
+  renderFinanceMembers();
+  render();
+  await advance();
+});
 async function replayOrdering(keyed) {
-  if (!orderingCheckpoint) return;
+  if (state.scene < 6) {
+    orderingReturn = clone(state);
+    orderingCheckpoint = clone({ ...state, scene: 6, partitionCount: 2,
+      readers: ["A", "B"], grouped: true, groupRevealed: true,
+      assignments: { 0: "A", 1: "B" }, rebalancing: false });
+    history[6] = clone({ ...orderingCheckpoint, records: [], events: [],
+      offsets: { orders: [0, 0], message: [0, 0], "finance-disputes": [0, 0] },
+      acknowledged: {}, starts: {}, processedByGroup: {}, appliedByGroup: {},
+      outcome: "", step: "", checkpoint: false });
+  }
   cancelFlow();
   const signal = flowController.signal;
   busy = true;
   render();
   try {
-    Object.assign(state, clone(orderingCheckpoint), { scene: keyed ? 6 : 5 });
+    Object.assign(state, clone(orderingCheckpoint), { scene: keyed ? 7 : 6, step: "", checkpoint: false });
     restoreProducerEvents();
     renderFinanceMembers();
     render();
@@ -973,11 +935,6 @@ async function replayOrdering(keyed) {
 $("#replay-unkeyed").addEventListener("click", () => replayOrdering(false));
 $("#replay-keyed").addEventListener("click", () => replayOrdering(true));
 $("#scenario-select").addEventListener("change", (event) => location.assign(event.target.value));
-speedInput.addEventListener("input", () => {
-  speed = Number(speedInput.value);
-  $("#speed-output").textContent = `${speed.toFixed(2).replace(/0$/, "")}×`;
-  animations.forEach((animation) => { animation.speed = speed; });
-});
 window.addEventListener("resize", () => requestAnimationFrame(drawRoutes));
 render();
 requestAnimationFrame(drawRoutes);

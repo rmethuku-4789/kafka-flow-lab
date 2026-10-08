@@ -1,29 +1,26 @@
 [hidden]{display:none!important}
 body{width:100vw;max-width:none}
 .app-shell{width:100%;max-width:none}
-#failure-stage{grid-template-columns:minmax(240px,.9fr) minmax(420px,1.3fr) minmax(310px,1.12fr);gap:clamp(36px,4.4vw,84px)}
 #failure-stage .connections{z-index:2}
 .cluster-frame{align-self:center;min-width:0;position:relative;display:grid;gap:8px;padding:0}
 .cluster-frame.is-replicated{border:1px solid #dce2e8;border-radius:16px;background:#f8fafd;padding:5px 12px 5px 66px;gap:3px}
-.cluster-caption,.controller-inset,.broker-header,.replica-meta{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.cluster-caption,.broker-header,.replica-meta{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .cluster-caption strong{font:800 18px var(--display)}
-.cluster-caption span,.controller-inset,.replica-meta,.cluster-offset{font:500 10px var(--mono);color:#52627a}
-.controller-inset{border:1px dashed #d7c9f0;background:#faf8ff;border-radius:6px;padding:5px;color:#6941b5}
-.controller-inset.is-electing{border-color:#edb45c;background:#fffaf1;color:#a66c1b}
+.cluster-caption span,.replica-meta,.cluster-offset{font:500 12px var(--mono);color:#52627a}
 .broker-stack{display:grid;gap:12px}
 .failure-broker{position:relative;padding:7px 9px;display:grid;gap:4px;border-radius:12px;transition:border-color .2s,background .2s}
 .broker-header h2{font:800 19px var(--display);margin:0}
-.broker-role{font:600 10px var(--mono);color:#52627a;background:#f0f3f7;padding:3px 5px;border-radius:4px}
+.broker-role{font:600 12px var(--mono);color:#52627a;background:#f0f3f7;padding:3px 5px;border-radius:4px}
 .failure-broker.is-leader{border-color:#9abbf4;background:#f8fbff}
 .failure-broker.is-leader .broker-role{color:#2d6fec;background:#eaf2ff}
 .failure-broker.is-down{border-color:#df9292;background:#fff3f3}
 .failure-broker.is-down .broker-role,.failure-broker.is-down .replica-state{color:#a63636;background:#fdeaea}
 .failure-broker .topic-boundary{padding:5px}
 .failure-broker .topic-heading{min-height:20px}
-.failure-broker .topic-heading strong{font-size:11px}
+.failure-broker .topic-heading strong{font-size:12px}
 .failure-broker .partition-row{margin-top:3px;min-height:34px;padding:3px 5px}
 .failure-broker .stored-record{flex:none}
-.failure-broker .stored-record small{font-size:9px}
+.failure-broker .stored-record small{font-size:12px}
 .failure-broker .record-window{gap:5px}
 .cluster-offset{padding:3px 2px;color:#6941b5}
 #finance{min-height:180px}
@@ -39,14 +36,14 @@ body{width:100vw;max-width:none}
 #finance[data-activity="error"] .delivery-indicator,#finance[data-activity="error"] .member-state{color:#a63636;background:#fdeaea}
 #producer[data-activity="retry"]{border-color:#edb45c;background:#fffaf1}
 .packet{display:grid;pointer-events:none}
-.packet small{font-size:10px;white-space:normal;width:max-content;max-width:58px;line-height:1.2;text-align:center;border:1px solid #e4e9f0;background:#fff;border-radius:4px;padding:2px 3px}
+.packet small{font-size:12px;white-space:normal;width:max-content;max-width:58px;line-height:1.2;text-align:center;border:1px solid #e4e9f0;background:#fff;border-radius:4px;padding:2px 3px}
 .stored-record.is-finance-committed{opacity:.55}
 .packet.is-control i{background:#8059dc}
 .connection-path.is-active{stroke:#2d6fec}
 .connection-path.is-control{stroke:#bca8e1;stroke-dasharray:4 4}
 .connection-path.is-active.is-control{stroke:#8059dc;stroke-dasharray:none}
 .playback-right{gap:5px}
-.playback-controls button{font-size:11px;padding-left:9px;padding-right:9px}
+.playback-controls button{font-size:12px;padding-left:9px;padding-right:9px}
 .cluster-frame:not(.is-replicated){padding:16px;border:1px solid #dce3eb;border-radius:15px;background:#fff;box-shadow:0 4px 16px #1c2f4b0b}
 .cluster-frame:not(.is-replicated) .failure-broker{border:0;box-shadow:none;padding:0;background:transparent;gap:8px}
 .cluster-frame:not(.is-replicated) .broker-header h2{font-size:clamp(23px,1.35vw,26px);font-weight:700;letter-spacing:-.035em}
@@ -54,7 +51,7 @@ body{width:100vw;max-width:none}
 .cluster-frame:not(.is-replicated) .topic-heading{min-height:34px}
 .cluster-frame:not(.is-replicated) .topic-heading strong{font-size:clamp(12px,.88vw,17px)}
 .cluster-frame:not(.is-replicated) .partition-row{min-height:48px}
-.cluster-frame:has(.failure-broker.is-down):not(.is-replicated){border-color:#df9292;background:#fff3f3}
+.cluster-frame:has(.failure-broker.is-down:not([hidden])):not(.is-replicated){border-color:#df9292;background:#fff3f3}
 .cluster-frame .offset-grid{grid-template-columns:1fr}
 .is-replicated .single-broker-detail{display:none}
 .cluster-frame .cluster-offset{padding:0}
@@ -72,5 +69,68 @@ body{width:100vw;max-width:none}
 .is-replicated .topic-boundary{padding:4px}
 .is-replicated .partition-row{min-height:38px}
 .single-broker-detail.leader-note{color:#138772}
-.failure-broker .stored-record small{font-size:8px}
-@media(max-height:820px){.controller-inset{padding:4px}.replica-meta{font-size:9px}.is-replicated .broker-role{font-size:9px}}
+.failure-broker .stored-record small{font-size:12px}
+@media(max-height:820px){.replica-meta{font-size:12px}.is-replicated .broker-role{font-size:12px}}
+
+/* LEO/HW belong to replicas; the coordinator inset contains only group NEXT. */
+.is-replicated .replica-meta{display:flex}
+.broker-client-meta,#replica-topic-name{font:500 12px var(--mono);color:#52627a;margin:4px 0}
+.broker-result{font:600 14px var(--sans);color:#138772;min-height:0;margin:4px 0}
+.broker-result:empty,.broker-client-meta:empty{display:none}
+#ack-comparison{display:grid;gap:4px;margin-top:8px;font:500 12px var(--mono)}
+#ack-comparison>div{display:flex;justify-content:space-between;padding:5px;background:#f0f3f7;border-radius:4px}
+#ack-comparison .is-selected{background:#eaf2ff;color:#2d6fec}
+#replica-topic-name{display:none}
+
+@media(max-height:900px){
+  .broker-page .is-replicated .broker-stack{gap:3px}
+  .broker-page .is-replicated .failure-broker{padding:9px 6px;gap:3px}
+  .broker-page .is-replicated .broker-header h2{font-size:20px}
+  .broker-page .is-replicated .broker-role{padding:3px 4px}
+  .broker-page .is-replicated .topic-boundary{padding:3px}
+  .broker-page .is-replicated .topic-heading{min-height:20px}
+  .broker-page .is-replicated .partition-row{min-height:32px;margin:0;padding:2px 5px}
+  .broker-page .is-replicated .record-dot{width:26px;height:26px}
+  .broker-page .is-replicated .coordinator{padding:4px}
+  .broker-page .is-replicated .internal-topic{margin:1px 0}
+  .broker-page .is-replicated .offset-grid>div{padding:3px 5px}
+}
+@media (min-height:821px) and (max-height:900px){.broker-page .cluster-frame.is-replicated{transform:translateY(-12px)}}
+
+@media(min-width:1800px){.log-end,#cluster-offset,#finance-next,#finance-record,.event-card strong{font-size:14px}}
+@media(max-height:820px){
+  .is-replicated .topic-heading{display:none}
+  #replica-topic-name:not([hidden]){display:block}
+  .is-replicated .partition-row{min-height:28px;margin:0;padding:2px 4px}
+  .is-replicated .failure-broker{padding:4px 6px;gap:2px}
+  .is-replicated .broker-header h2{font-size:18px}
+  .is-replicated .record-dot{width:24px;height:24px}
+  .is-replicated .broker-role{padding:2px}
+  .is-replicated .replica-meta{line-height:16px}
+  #orders,#message-center{min-height:36px;padding:6px 9px}
+  #orders .consumer-meta,#message-center .consumer-meta{display:none}
+  .broker-page .consumer-heading .service-icon{width:24px;height:24px;font-size:16px}
+  #finance .finance-member{padding:5px}
+  #finance .member-progress{height:5px}
+  #finance .member-records{min-height:16px}
+  #finance{min-height:0}
+  .broker-page .producer-card{padding:12px}
+  .broker-page .node-title{margin:8px 0}
+  .broker-page .producer-events{margin-top:8px}
+}
+
+@media(max-height:820px){.broker-page .is-replicated .stored-record small{display:none}.broker-page .is-replicated .record-dot{width:24px;height:24px}.broker-page .is-replicated .partition-row{min-height:28px}}
+
+@media(max-height:820px){
+ .broker-page .is-replicated .failure-broker{padding:5px 5px;gap:2px}
+ .broker-page .is-replicated .topic-boundary{padding:1px}
+ .broker-page .is-replicated .partition-row{min-height:32px}
+ .broker-page .is-replicated .broker-stack{gap:4px}
+ .broker-page .is-replicated .coordinator-heading{gap:2px}
+ .broker-page #replica-topic-name{margin:1px 0}
+}
+.packet small{overflow-wrap:anywhere}
+
+@media(min-width:1800px){.broker-page #ack-comparison{font-size:14px}}
+
+.packet small{max-width:64px;padding:1px}

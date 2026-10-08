@@ -1,21 +1,23 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <link rel="icon" href="data:," />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#f2f4f6" />
-    <title>Kafka Flow Lab · Recap 2</title>
+    <title>Kafka Flow Lab · Where does a dispute event go?</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/shared/styles/theme.css" />
   </head>
-  <body>
+  <body class="recap-page">
     <div class="app-shell">
       <header class="page-header">
         <div class="title-block">
           <p class="eyebrow">THE DISPUTE EVENT · A RECAP</p>
-          <h1>Follow one message from <span>producer to consumers</span></h1>
+          <p class="ownership-legend">KAFKA · APP LOGIC · SCHEMA REGISTRY (CONFLUENT) · external service</p>
+          <h1>Where does a <span>dispute event go?</span></h1>
         </div>
         <label class="scenario-picker">
           <span class="sr-only">Choose a Kafka scenario</span>
@@ -73,7 +75,7 @@
                 <div><span>message-center</span><strong id="message-group-offset">P0 · NEXT 0</strong></div>
               </div>
             </section>
-            <p class="leader-note"><span aria-hidden="true">◉</span> P0 partition leader · one ordered log</p>
+            <p class="leader-note">Synthetic model · Kafka 4.2 · KRaft · ordinary consumer groups</p>
           </section>
 
           <section class="consumer-column" aria-label="Independent consumer groups">
@@ -84,7 +86,7 @@
                 <h3>cw-orders</h3>
                 <span class="delivery-indicator" id="orders-status">WAITING</span>
               </div>
-              <div class="consumer-meta"><span>GROUP · …_orders_karafka</span><strong id="orders-next">P0 · NEXT 0</strong></div>
+              <div class="consumer-meta"><span>GROUP · orders-disputes</span><strong id="orders-next">P0 · NEXT 0</strong></div>
               <div class="work-result"><span class="work-icon" aria-hidden="true">✓</span><strong>show claim open banner</strong></div>
               <div class="processing-progress" aria-hidden="true"><span class="progress-track"></span><span class="progress-fill"></span><i class="progress-thumb"></i></div>
             </article>
@@ -94,7 +96,7 @@
                 <h3>cw-finance</h3>
                 <span class="delivery-indicator" id="finance-status">WAITING</span>
               </div>
-              <div class="consumer-meta"><span>GROUP · …_finance_karafka</span><strong id="finance-next">P0 · NEXT 0</strong></div>
+              <div class="consumer-meta"><span>GROUP · finance-disputes</span><strong id="finance-next">P0 · NEXT 0</strong></div>
               <div class="work-result"><span class="work-icon" aria-hidden="true">✓</span><strong>block payout</strong></div>
               <div class="processing-progress" aria-hidden="true"><span class="progress-track"></span><span class="progress-fill"></span><i class="progress-thumb"></i></div>
             </article>
@@ -104,13 +106,14 @@
                 <div class="consumer-name"><h3>cw-message-center</h3><small>Eligible cases only</small></div>
                 <span class="delivery-indicator" id="message-status">WAITING</span>
               </div>
-              <div class="consumer-meta"><span>GROUP · …_message_center_karafka</span><strong id="message-next">P0 · NEXT 0</strong></div>
+              <div class="consumer-meta"><span>GROUP · message-center-disputes</span><strong id="message-next">P0 · NEXT 0</strong></div>
               <div class="work-result"><span class="work-icon" aria-hidden="true">✓</span><strong>create system message</strong></div>
               <div class="processing-progress" aria-hidden="true"><span class="progress-track"></span><span class="progress-fill"></span><i class="progress-thumb"></i></div>
             </article>
           </section>
         </div>
 
+        <div class="scene-prompt" hidden><span id="prompt-label"></span><p id="scene-prompt">When does each independent group know its committed NEXT?</p></div>
         <footer class="playback-controls" aria-label="Recap animation controls">
           <div class="playback-left">
             <button class="pause-button" id="pause-button" type="button" aria-pressed="false">Ⅱ Pause</button>

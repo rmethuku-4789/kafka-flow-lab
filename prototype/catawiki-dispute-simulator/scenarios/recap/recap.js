@@ -1,26 +1,43 @@
+import { displayRecordProgress } from "../../shared/scripts/record-progress.js";
+import { createPlayback, PACKET_DURATION } from "../../shared/scripts/playback.js";
 const $ = (selector, root = document) => root.querySelector(selector);
 const field = $("#flow-field");
 const routeLayer = $("#connection-paths");
-const speedControl = $("#speed-control");
+const playbackControls = createPlayback();
 const groups = [
   { id: "orders", card: $("#orders-card"), route: null, offset: 0 },
   { id: "finance", card: $("#finance-card"), route: null, offset: 0 },
   { id: "message", card: $("#message-card"), route: null, offset: 0 },
 ];
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
-const flightDuration = reduceMotion ? 120 : 920;
+const flightDuration = playbackControls.duration(PACKET_DURATION);
 const processingDuration = reduceMotion ? 120 : 1050;
-let speed = Number(speedControl.value);
-let paused = false;
+let paused = document.hidden;
 let nextOffset = 0;
 let records = [];
 let routes = { producer: null, consumers: [] };
 const activeAnimations = new Set();
-const activeDelays = new Set();
+const activeFlights = new Set();
+let packetLabelFrame = null;
+
+function arrangePacketLabels() {
+  const fieldRect = field.getBoundingClientRect();
+  for (const { packet, key } of activeFlights) {
+    const left = (key === "producer" ? $("#producer-card") : $("#cluster-card")).getBoundingClientRect().right - fieldRect.left;
+    const right = (key === "producer" ? $("#cluster-card") : groups[0].card).getBoundingClientRect().left - fieldRect.left;
+    const label = $("small", packet);
+    label.style.maxWidth = `${right - left - 6}px`;
+    const box = packet.getBoundingClientRect();
+    const center = box.left + box.width / 2 - fieldRect.left;
+    const half = label.getBoundingClientRect().width / 2;
+    const desired = Math.max(left + half + 3, Math.min(right - half - 3, center));
+    label.style.left = `${desired - center + packet.offsetWidth / 2}px`;
+  }
+  packetLabelFrame = activeFlights.size ? requestAnimationFrame(arrangePacketLabels) : null;
+}
 
 function addAnimation(animation) {
-  animation.playbackRate = speed;
-  if (paused) animation.pause();
+  playbackControls.track(animation, "playbackRate");
   activeAnimations.add(animation);
   animation.finished.then(
     () => activeAnimations.delete(animation),
@@ -29,70 +46,12 @@ function addAnimation(animation) {
   return animation;
 }
 
-function wait(milliseconds) {
-  return new Promise((resolve) => {
-    let remaining = milliseconds;
-    let startedAt = 0;
-    let scheduledSpeed = speed;
-    let timer = null;
-    let done = false;
-    let delay;
-
-    const finish = () => {
-      if (done) return;
-      done = true;
-      if (timer !== null) clearTimeout(timer);
-      activeDelays.delete(delay);
-      resolve();
-    };
-    const schedule = () => {
-      if (done || paused) return;
-      if (remaining <= 0) return finish();
-      scheduledSpeed = speed;
-      startedAt = performance.now();
-      timer = setTimeout(() => {
-        timer = null;
-        remaining -= (performance.now() - startedAt) * scheduledSpeed;
-        schedule();
-      }, remaining / scheduledSpeed);
-    };
-
-    delay = {
-      pause() {
-        if (timer === null) return;
-        clearTimeout(timer);
-        timer = null;
-        remaining -= (performance.now() - startedAt) * scheduledSpeed;
-        if (remaining <= 0) finish();
-      },
-      setSpeed() {
-        if (timer === null) return;
-        clearTimeout(timer);
-        timer = null;
-        remaining -= (performance.now() - startedAt) * scheduledSpeed;
-        schedule();
-      },
-      resume: schedule,
-    };
-    activeDelays.add(delay);
-    schedule();
-  });
-}
-
-function setPaused(value) {
+const wait = milliseconds => playbackControls.wait(milliseconds);
+playbackControls.subscribe(({paused: value}) => {
   paused = value;
-  if (paused) {
-    activeAnimations.forEach((animation) => animation.pause());
-    activeDelays.forEach((delay) => delay.pause());
-  } else {
-    activeAnimations.forEach((animation) => animation.play());
-    activeDelays.forEach((delay) => delay.resume());
-  }
-  $("#pause-button").textContent = paused ? "Resume" : "Ⅱ Pause";
-  $("#pause-button").setAttribute("aria-pressed", String(paused));
   $("#flow-state").classList.toggle("is-paused", paused);
-  $("#flow-state span").textContent = paused ? "PAUSED" : "LIVE";
-}
+  $("#flow-state span").textContent = document.hidden ? "PAUSED · tab hidden" : paused ? "PAUSED" : "LIVE";
+});
 
 function position(element, edge, gap = 0, yOffset = 0) {
   const rect = element.getBoundingClientRect();
@@ -133,6 +92,7 @@ function drawRoutes() {
     position($("#producer-card"), "right", 8),
     position($("#cluster-card"), "left", 8),
   ], "producer-route");
+  routes.producer.key = "producer";
   const consumerCenters = groups.map((group) => position(group.card, "left", 8));
   const brokerCenterY = position($("#cluster-card"), "right").y;
   const firstConsumerY = consumerCenters[0].y;
@@ -156,6 +116,7 @@ function drawRoutes() {
   routes.consumers = groups.map((group, index) => {
     const y = consumerCenters[index].y;
     group.route = {
+      key: group.id,
       points: [
         position($("#cluster-card"), "right", 8),
         { x: spineX, y: brokerCenterY },
@@ -165,6 +126,7 @@ function drawRoutes() {
       paths: [routes.brokerTrunk, routes.consumerSpine, routes.consumerBranches[index]],
     };
     group.commitRoute = {
+      key: `${group.id}-commit`,
       points: [
         consumerCenters[index],
         { x: spineX, y },
@@ -174,6 +136,10 @@ function drawRoutes() {
       paths: [routes.coordinatorTrunk, routes.consumerSpine, routes.consumerBranches[index]],
     };
     return group.route;
+  });
+  activeFlights.forEach(({ animation, packet, key, reverse }) => {
+    const route = key === "producer" ? routes.producer : groups.find(group => key.startsWith(group.id))[key.endsWith("-commit") ? "commitRoute" : "route"];
+    animation.effect.setKeyframes(packetFrames(route, packet, reverse));
   });
 }
 
@@ -195,35 +161,42 @@ function addPacket(label, type) {
   return packet;
 }
 
-async function fly(route, label, reverse = false, type = "record") {
+function packetFrames(route, packet, reverse) {
   const points = reverse ? [...route.points].reverse() : route.points;
-  const packet = addPacket(label, type);
   const halfWidth = packet.offsetWidth / 2;
   const halfHeight = packet.offsetHeight / 2;
-  const keyframes = points.map((point, index) => ({
+  return points.map((point, index) => ({
     transform: `translate(${point.x - halfWidth}px, ${point.y - halfHeight}px)`,
     offset: points.length > 1 ? index / (points.length - 1) : 1,
   }));
-  const animation = addAnimation(packet.animate(keyframes, { duration: flightDuration, easing: "linear", fill: "forwards" }));
+}
+
+async function fly(route, label, reverse = false, type = "record") {
+  const packet = addPacket(label, type);
+  const animation = addAnimation(packet.animate(packetFrames(route, packet, reverse), { duration: flightDuration, easing: "linear", fill: "forwards" }));
+  const flight = { animation, packet, key: route.key, reverse };
+  activeFlights.add(flight);
+  if (packetLabelFrame === null) packetLabelFrame = requestAnimationFrame(arrangePacketLabels);
   try {
     await animation.finished;
   } finally {
+    activeFlights.delete(flight);
     packet.remove();
   }
 }
 
 function updateRecords(offset) {
-  records.push(offset);
-  records = records.slice(-5);
+  if (offset !== undefined) { records.push(offset); records = records.slice(-5); }
   const window = $("#record-window");
   window.replaceChildren(...records.map((record, index) => {
     const dot = document.createElement("span");
-    dot.className = `record-dot${index === records.length - 1 ? " is-latest" : ""}`;
+    dot.className = "record-dot";
+    displayRecordProgress(dot, { partition: 0, offset: record }, { scope: window, playback: playbackControls, groups: groups.map(group => group.id), nextByGroup: Object.fromEntries(groups.map(group => [group.id, [group.acknowledged ?? 0]])) });
     dot.textContent = String(record);
     dot.setAttribute("aria-label", `Record offset ${record}`);
     return dot;
   }));
-  $("#record-count").textContent = `${offset + 1} ${offset === 0 ? "record" : "records"}`;
+  $("#record-count").textContent = `${(records.at(-1) ?? -1) + 1} ${records.at(-1) === 0 ? "record" : "records"}`;
 }
 
 function setConsumerState(group, state) {
@@ -264,7 +237,7 @@ async function publish(offset) {
   $("#broker-status").textContent = `STORED · P0 · OFFSET ${offset}`;
   $("#producer-status").textContent = "WAITING FOR ACK";
   activateRoutes([routes.producer], "control");
-  await fly(routes.producer, "PRODUCER ACK", true, "control");
+  await fly(routes.producer, "ACK · acks=all", true, "control");
   $("#producer-status").textContent = "ACK RECEIVED";
   await wait(300);
 }
@@ -297,9 +270,13 @@ async function commitOffsets(offset) {
     $("#coordinator-status").textContent = "OFFSETS STORED · SENDING RESPONSES";
     await fly(group.commitRoute, "COMMIT ACK", true, "control");
     $(`#${group.id}-next`).textContent = `P0 · NEXT ${group.offset}`;
+    group.acknowledged = group.offset;
+    updateRecords();
     setConsumerState(group, "COMMITTED");
   }));
   $("#coordinator-status").textContent = "3 COMMIT RESPONSES SENT";
+  $("#prompt-label").textContent = "THE KAFKA WAY";
+  $("#scene-prompt").textContent = "Simplified: one poll and one commit per record. Real consumers poll batches and may commit less often.";
 }
 
 async function runFlow() {
@@ -311,23 +288,15 @@ async function runFlow() {
   }
 }
 
-$("#pause-button").addEventListener("click", () => setPaused(!paused));
 $("#reset-button").addEventListener("click", () => window.location.reload());
 $("#scenario-select").addEventListener("change", (event) => { window.location.href = event.target.value; });
-speedControl.addEventListener("input", () => {
-  speed = Number(speedControl.value);
-  $("#speed-output").value = `${speed.toFixed(2).replace(/0$/, "")}×`;
-  speedControl.setAttribute("aria-valuetext", `${speed} times speed`);
-  activeAnimations.forEach((animation) => { animation.playbackRate = speed; });
-  activeDelays.forEach((delay) => delay.setSpeed());
-});
 window.addEventListener("resize", drawRoutes);
 new ResizeObserver(drawRoutes).observe(field);
 
 requestAnimationFrame(() => {
   drawRoutes();
   runFlow().catch((error) => {
-    console.error("Recap 2 flow stopped", error);
+    console.error("Recap flow stopped", error);
     $("#coordinator-status").textContent = "FLOW ERROR · RESET TO RESTART";
   });
 });

@@ -1,10 +1,11 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <link rel="icon" href="data:," />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#f2f4f6" />
-    <title>Kafka Flow Lab · Offsets & idempotency</title>
+    <title>Kafka Flow Lab · One dispute, zero or two ledger entries?</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet" />
@@ -16,8 +17,8 @@
     <div class="app-shell">
       <header class="page-header">
         <div class="title-block">
-          <p class="eyebrow">DISPUTE EVENTS · FINANCE PROCESSING</p>
-          <h1 id="page-title">Finance crashes <span>after a write</span></h1>
+          <p class="eyebrow ownership-legend" title="Synthetic teaching model · Kafka 4.2 · KRaft · ordinary consumer groups">KAFKA · APP LOGIC · SCHEMA REGISTRY (CONFLUENT) · external service</p>
+          <h1 id="page-title">One dispute, <span>zero or two ledger entries?</span></h1>
         </div>
         <label class="scenario-picker">
           <span class="sr-only">Choose a Kafka scenario</span>
@@ -34,7 +35,7 @@
       </header>
 
       <main class="stage" aria-label="Kafka commit timing and idempotency scenario">
-        <div class="stage-label"><span id="scene-number">13</span><strong id="scene-heading">HEALTHY GROUPED FLOW</strong><small id="scene-counter">1 / 4</small></div>
+        <div class="stage-label"><span id="scene-number">05</span><strong id="scene-heading">HEALTHY GROUPED FLOW</strong><small id="scene-counter">1 / 4</small></div>
 
         <div class="flow-field groups-flow" id="groups-stage">
           <svg class="connections" id="groups-connections" aria-hidden="true"><g id="groups-paths"></g></svg>
@@ -47,8 +48,7 @@
               <div><h2>cw-customer-info</h2><p>Dispute events</p></div>
             </div>
             <div class="producer-events" aria-label="Producer event types">
-              <div class="event-card" data-event="DisputeCreated"><span class="event-icon created-icon" aria-hidden="true"></span><div><strong>Dispute created</strong><small>DisputeCreated</small></div></div>
-              <div class="event-card" data-event="DisputeResolved"><span class="event-icon resolved-icon" aria-hidden="true"></span><div><strong>Dispute resolved</strong><small>DisputeResolved</small></div></div>
+              <div class="event-card" data-event="DisputeResolved"><span class="event-icon resolved-icon" aria-hidden="true"></span><div><strong>Dispute resolved</strong><small>DisputeResolved · dispute-49328:resolved</small></div></div>
             </div>
             <p class="producer-note"><span class="pulse-dot"></span><span id="producer-note">Does not wait for consumers</span></p>
           </article>
@@ -60,7 +60,7 @@
               <div class="topic-heading"><strong>…_customer_info_disputes</strong><span>TOPIC</span></div>
               <div class="partition-list" id="partition-list">
                 <div class="partition-row" data-partition="0"><strong class="partition-name">P0</strong><div class="record-window" aria-label="Partition zero records"></div><span class="record-count">0</span></div>
-                <div class="partition-row" data-partition="1"><strong class="partition-name">P1</strong><div class="record-window" aria-label="Partition one records"></div><span class="record-count">0</span></div>
+                <div class="partition-row" data-partition="1" hidden><strong class="partition-name">P1</strong><div class="record-window" aria-label="Partition one records"></div><span class="record-count">0</span></div>
               </div>
               <p class="retention-note">LATEST RECORDS SHOWN · TOPIC RETENTION IS INDEPENDENT OF CONSUMER OFFSETS</p>
             </div>
@@ -81,7 +81,7 @@
             <div class="consumer-column-heading"><span><span class="role-dot consumer-dot"></span> CONSUMERS</span><strong id="consumer-column-note">EXAMPLE PARTITION ASSIGNMENT</strong></div>
             <article class="node consumer-card" id="orders-card" data-consumer="orders">
               <div class="consumer-heading"><span class="service-icon orders-icon" aria-hidden="true">✓</span><h3>cw-orders</h3><span class="delivery-indicator" id="orders-state">WAITING</span></div>
-              <div class="consumer-meta"><span>GROUP · …_orders_karafka</span><strong id="orders-next">P0 · NEXT 0</strong></div>
+              <div class="consumer-meta"><span>GROUP · orders-disputes</span><strong id="orders-next">P0 · NEXT 0</strong></div>
               <div class="work-result"><span class="work-icon">✓</span><strong>show claim open banner</strong></div>
               <div class="processing-progress" aria-hidden="true"><span class="progress-track"></span><span class="progress-fill"></span><i class="progress-thumb"></i></div>
             </article>
@@ -89,25 +89,25 @@
               <div class="consumer-heading"><span class="service-icon finance-icon" aria-hidden="true">¤</span><h3>cw-finance</h3><span class="delivery-indicator" id="finance-state">READY</span></div>
               <div class="finance-members finance-group-boundary" id="finance-members" data-group-label="ONE FINANCE CONSUMER GROUP · SHARED GROUP ID">
 <div class="finance-member" data-member="A" data-activity="idle"><strong>Finance A</strong><small>P0</small><span class="member-lag">LAG 0</span><span class="member-state">WAITING</span><div class="member-progress" aria-hidden="true"><i></i></div><div class="member-records"><small class="member-record">—</small><small class="member-history"></small></div></div>
-<div class="finance-member" data-member="B" data-activity="idle"><strong>Finance B</strong><small>P1</small><span class="member-lag">LAG 0</span><span class="member-state">WAITING</span><div class="member-progress" aria-hidden="true"><i></i></div><div class="member-records"><small class="member-record">—</small><small class="member-history"></small></div></div>
+<div class="finance-member" data-member="B" hidden data-activity="idle"><strong>Finance B</strong><small>P1</small><span class="member-lag">LAG 0</span><span class="member-state">WAITING</span><div class="member-progress" aria-hidden="true"><i></i></div><div class="member-records"><small class="member-record">—</small><small class="member-history"></small></div></div>
 </div>
-              <div class="finance-outcome" id="finance-outcome" hidden></div>
+              <div id="offset-comparison" class="offset-comparison"></div><div class="finance-outcome" id="finance-outcome" hidden></div>
             </article>
-            <article class="node lesson-database" id="lesson-database" hidden aria-label="Finance database"><div class="node-kicker"><span class="role-dot consumer-dot"></span> DATABASE <span class="state-label" id="database-state">READY</span></div><strong>Finance ledger</strong><div id="database-details" class="database-details">Business effects · 0</div><div class="database-progress"><i></i></div></article>
+            <article class="node lesson-database" id="lesson-database" hidden aria-label="Finance database"><div class="node-kicker"><span class="role-dot consumer-dot"></span> DATABASE <span class="state-label" id="database-state">READY</span></div><strong>Finance ledger</strong><div id="database-details" class="database-details">Business effects · 0</div><div id="database-transaction" class="database-details"></div><div class="database-progress"><i></i></div></article>
             <article class="node consumer-card" id="message-card" data-consumer="message">
               <div class="consumer-heading"><span class="service-icon message-icon" aria-hidden="true">●</span><div class="consumer-name"><h3>cw-message-center</h3><small>Eligible cases only</small></div><span class="delivery-indicator" id="message-state">WAITING</span></div>
-              <div class="consumer-meta"><span>GROUP · …_message_center_karafka</span><strong id="message-next">P0 · NEXT 0</strong></div>
+              <div class="consumer-meta"><span>GROUP · message-center-disputes</span><strong id="message-next">P0 · NEXT 0</strong></div>
               <div class="work-result"><span class="work-icon">✓</span><strong>create system message</strong></div>
               <div class="processing-progress" aria-hidden="true"><span class="progress-track"></span><span class="progress-fill"></span><i class="progress-thumb"></i></div>
             </article>
           </section>
         </div>
 
-        <div class="scene-prompt" aria-live="polite"><span id="prompt-label">ASK THE ROOM</span><p id="scene-prompt">When should the consumer save its next offset?</p></div>
+        <div class="scene-prompt" hidden><span id="prompt-label"></span><p id="scene-prompt">Goal: one ledger entry. DisputeResolved is P0:0; NEXT 0, ledger empty.</p></div>
 
         <footer class="playback-controls" aria-label="Scenario and animation controls">
           <div class="playback-left"><button class="pause-button" id="pause-button" type="button" aria-pressed="false">Ⅱ Pause</button><label class="speed-control" for="speed-control"><span>Animation speed</span><input id="speed-control" type="range" min="0.25" max="1.5" step="0.05" value="0.5" /><small><span>SLOWEST</span><span>FASTEST</span></small><output id="speed-output" for="speed-control">0.5×</output></label></div>
-          <div class="playback-right"><span class="flow-state" id="flow-state"><i></i><span>LIVE</span></span><button class="previous-button" id="connect-button" type="button" hidden>Connect Finance</button><div class="lesson-replays" id="lesson-replays"><button class="previous-button" data-replay="0" type="button">Before</button><button class="previous-button" data-replay="1" type="button">After</button><button class="previous-button" data-replay="2" type="button">Event ID</button></div><button class="reset-button" id="reset-button" type="button">Reset scene</button><button class="previous-button" id="previous-button" type="button" disabled>← Previous</button><button class="next-button" id="next-button" type="button">Next →</button></div>
+          <div class="playback-right"><span class="flow-state" id="flow-state"><i></i><span>LIVE</span></span><button class="reset-button" id="reset-button" type="button">Reset scene</button><button class="previous-button" id="previous-button" type="button" disabled>← Previous</button><button class="next-button" id="next-button" type="button">Show what happens →</button></div>
         </footer>
       </main>
     </div>

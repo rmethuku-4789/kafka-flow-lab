@@ -4,13 +4,13 @@ export function createModel() {
     serviceNext: { orders: [0, 0], message: [0, 0] },
     effects: {}, handled: [], dlq: [], failed: null, attempts: 0,
     schemas: [], cache: [], registryRequests: 0, businessError: null,
-    archives: [], avroTopic: false,
+    storedNext: [0, 0], retryAttempts: [0, 0], retryExhausted: [false,false], journal: [], businessSequence: 49328,
   };
 }
 
 export function appendRecord(model, partition, fields = {}) {
   const record = { partition, offset: model.logs[partition].length, event: "DisputeCreated", ...fields };
-  record.eventId ??= `event-${partition}-${record.offset}`;
+  record.eventId ??= `dispute-${model.businessSequence++}:created`;
   model.logs[partition].push(record);
   return record;
 }
@@ -30,20 +30,12 @@ export function applyEffect(model, record, idempotent = false) {
 export function appendDeadLetter(model, record) {
   const entry = { partition: 0, offset: model.dlq.length, eventId: record.eventId,
     sourceTopic: "customer_info_disputes", sourcePartition: record.partition,
-    sourceOffset: record.offset, error: "DatabaseTimeout", event: record.event };
+    sourceOffset: record.offset, error: "UnsupportedBusinessValue", event: record.event,
+    payload: structuredClone(record.payload), attempts: model.retryAttempts[record.partition],
+    failureContext: "Finance rejects reason=unsupported; selected bounded APP LOGIC policy" };
   model.dlq.push(entry);
   return entry;
 }
-
-export const schemaV1 = { type: "record", name: "DisputeCreated", fields: [
-  { name: "event_id", type: "string" }, { name: "user_id", type: "string" },
-] };
-export const incompatibleSchema = { ...schemaV1, fields: [
-  { name: "event_id", type: "string" }, { name: "user_id", type: "int" },
-] };
-export const compatibleSchema = { ...schemaV1, fields: [
-  ...schemaV1.fields, { name: "note", type: ["null", "string"], default: null },
-] };
 
 export const jsonSchemaV1 = {
   type: "object",
@@ -57,36 +49,29 @@ export const incompatibleJsonSchema = {
   required: ["order_dispute_id", "order_id", "reason"],
 };
 
+export const jsonSchemaV2 = {
+  ...jsonSchemaV1,
+  properties: { ...jsonSchemaV1.properties, note: { type: "string" } },
+};
+
+// Selected closed JSON examples under configured STRICT/BACKWARD; not a general schema validator.
 export function registerSchema(model, schema) {
-  const previous = model.schemas.at(-1)?.schema;
-  if (previous?.type === "object" && schema.type === "object") {
-    const typeChanged = Object.entries(previous.properties).some(([name, property]) => !schema.properties[name] || property.type !== schema.properties[name].type);
-    const requiredAdded = schema.required.some((name) => !previous.required.includes(name));
-    const closedFieldAdded = previous.additionalProperties === false && Object.keys(schema.properties).some((name) => !Object.hasOwn(previous.properties, name));
-    if (typeChanged || requiredAdded || closedFieldAdded) return { status: 409 };
-  } else if (previous) {
-    const typeChanged = previous.fields.some((field) => {
-      const updated = schema.fields.find((candidate) => candidate.name === field.name);
-      return !updated || JSON.stringify(field.type) !== JSON.stringify(updated.type);
-    });
-    const requiredAdded = schema.fields.some((field) => !previous.fields.some((candidate) => candidate.name === field.name) && !Object.hasOwn(field, "default"));
-    if (typeChanged || requiredAdded) return { status: 409 };
-  }
-  const existing = model.schemas.find((entry) => JSON.stringify(entry.schema) === JSON.stringify(schema));
+  const existing = model.schemas.find(entry => JSON.stringify(entry.schema) === JSON.stringify(schema));
   if (existing) return { status: 200, ...existing };
+  const previous = model.schemas.at(-1)?.schema;
+  if (previous) {
+    const changed = Object.entries(previous.properties).some(([name, property]) => schema.properties[name]?.type !== property.type);
+    const requiredAdded = schema.required.some(name => !previous.required.includes(name));
+    if (changed || requiredAdded || schema.additionalProperties !== false) return { status: 409 };
+  }
   const entry = { id: model.schemas.length + 1, version: model.schemas.length + 1, schema: structuredClone(schema) };
   model.schemas.push(entry);
   return { status: 200, ...entry };
 }
 
-export function beginAvroTopic(model) {
-  if (model.avroTopic) return;
-  model.archives.push({ topic: "customer_info_disputes", logs: model.logs, next: model.next,
-    position: model.position, serviceNext: model.serviceNext, businessError: model.businessError });
-  model.logs = [[], []];
-  model.next = [0, 0];
-  model.position = [0, 0];
-  model.serviceNext = { orders: [0, 0], message: [0, 0] };
-  model.businessError = null;
-  model.avroTopic = true;
+export function validatesJson(schema, payload) {
+  return schema.required.every(field => Object.hasOwn(payload, field)) && Object.entries(payload).every(([field, value]) => {
+    const property = schema.properties[field];
+    return property && (property.type === "integer" ? Number.isInteger(value) : typeof value === "string");
+  });
 }

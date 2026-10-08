@@ -1,9 +1,10 @@
 <!doctype html>
 <html lang="en">
 <head>
+    <link rel="icon" href="data:," />
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Kafka Flow Lab · Broker failure</title>
+  <title>Kafka Flow Lab · The leader broker goes down</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet" />
@@ -11,10 +12,10 @@
   <link rel="stylesheet" href="/shared/styles/flow-layout.css" />
   <link rel="stylesheet" href="/scenarios/broker-failure/broker-failure.css" />
 </head>
-<body>
+<body class="broker-page">
 <div class="app-shell">
   <header class="page-header">
-    <div class="title-block"><p class="eyebrow">DISPUTE EVENTS · FINANCE PROCESSING</p><h1>The broker goes <span>down</span></h1></div>
+    <div class="title-block"><p class="eyebrow ownership-legend" title="Synthetic teaching model · Kafka 4.2 · ordinary consumer groups">KAFKA · APP LOGIC · SCHEMA REGISTRY (CONFLUENT) · external service</p><h1>The leader broker <span>goes down</span></h1></div>
     <label class="scenario-picker"><span class="sr-only">Choose a Kafka scenario</span><select id="scenario-select">
             <option value="%BASE_URL%recap/">01 · Recap</option>
             <option value="%BASE_URL%groups/">02 · Consumer groups</option>
@@ -25,20 +26,19 @@
           </select><span class="select-chevron" aria-hidden="true">⌄</span></label>
   </header>
   <main class="stage" aria-label="Kafka broker failure scenario">
-    <div class="stage-label"><span>15</span><strong id="scene-heading">ONE BROKER</strong><small id="scene-counter">1 / 3</small></div>
+    <div class="stage-label"><span>03</span><strong id="scene-heading">ONE BROKER</strong><small id="scene-counter">1 / 5</small></div>
     <div class="flow-field groups-flow" id="failure-stage">
       <svg class="connections" aria-hidden="true"><g id="paths"></g></svg>
       <article class="node producer-card" id="producer">
         <div class="node-kicker"><span class="role-dot producer-dot"></span> PRODUCER <span class="state-label" id="producer-state">READY</span></div>
         <div class="node-title"><span class="service-icon producer-icon" aria-hidden="true">↗</span><div><h2>cw-customer-info</h2><p>Dispute events</p></div></div>
         <div class="producer-events"><div class="event-card" id="event-card"><span class="event-icon created-icon" aria-hidden="true"></span><div><strong>Dispute created</strong><small id="event-identity">—</small></div></div></div>
-        <p class="producer-note"><span class="pulse-dot"></span><span id="producer-config">acks=all · idempotence=true</span></p>
+        <p class="producer-note"><span class="pulse-dot"></span><span id="producer-config">acks=all</span></p><p class="broker-client-meta" id="producer-identity"></p><p class="broker-client-meta" id="producer-metadata"></p><p class="broker-result" id="producer-result"></p><div id="ack-comparison" hidden><div data-ack-mode="0"><span>acks=0</span><strong>NOT RUN</strong></div><div data-ack-mode="1"><span>acks=1</span><strong>NOT RUN</strong></div><div data-ack-mode="all"><span>acks=all</span><strong>NOT RUN</strong></div></div>
       </article>
       <section class="cluster-frame" id="cluster" aria-label="Kafka brokers">
         <div class="cluster-caption" id="cluster-caption" hidden><strong>Kafka cluster</strong><span>RF 3 · MIN ISR 2</span></div>
-        <div class="controller-inset" id="controller" hidden><strong>KRaft controller</strong><span id="controller-state">P0 · LEADER: BROKER 1</span></div>
         <div class="cluster-kicker single-broker-detail"><span class="role-dot cluster-dot"></span> EVENT LOG</div>
-        <div class="broker-stack">
+        <div id="replica-topic-name">…_customer_info_disputes · P0</div><div class="broker-stack">
           <article class="node failure-broker" data-broker="0"><div class="broker-header"><h2>Kafka broker <span>1</span></h2><span class="broker-role">LEADER</span></div><div class="topic-boundary"><div class="topic-heading"><strong>…_customer_info_disputes</strong><span>TOPIC</span></div><div class="partition-row"><strong class="partition-name">P0</strong><div class="record-window" aria-label="Broker 1 P0 records"></div><span class="record-count">0</span></div></div><div class="replica-meta"><span class="replica-state">IN SYNC</span><span class="log-end">LOG END 0</span></div></article>
           <article class="node failure-broker" data-broker="1" hidden><div class="broker-header"><h2>Kafka broker <span>2</span></h2><span class="broker-role">FOLLOWER</span></div><div class="topic-boundary"><div class="topic-heading"><strong>…_customer_info_disputes</strong><span>TOPIC</span></div><div class="partition-row"><strong class="partition-name">P0</strong><div class="record-window" aria-label="Broker 2 P0 records"></div><span class="record-count">0</span></div></div><div class="replica-meta"><span class="replica-state">IN SYNC</span><span class="log-end">LOG END 0</span></div></article>
           <article class="node failure-broker" data-broker="2" hidden><div class="broker-header"><h2>Kafka broker <span>3</span></h2><span class="broker-role">FOLLOWER</span></div><div class="topic-boundary"><div class="topic-heading"><strong>…_customer_info_disputes</strong><span>TOPIC</span></div><div class="partition-row"><strong class="partition-name">P0</strong><div class="record-window" aria-label="Broker 3 P0 records"></div><span class="record-count">0</span></div></div><div class="replica-meta"><span class="replica-state">IN SYNC</span><span class="log-end">LOG END 0</span></div></article>
@@ -52,15 +52,15 @@
       </section>
       <section class="consumer-column" aria-label="Consumer services">
         <div class="consumer-column-heading"><span><span class="role-dot consumer-dot"></span> CONSUMERS</span></div>
-        <article class="node consumer-card is-deemphasized" id="orders"><div class="consumer-heading"><span class="service-icon orders-icon" aria-hidden="true">✓</span><h3>cw-orders</h3><span class="delivery-indicator">IDLE</span></div><div class="consumer-meta"><span>GROUP · …_orders_karafka</span></div></article>
-        <article class="node consumer-card" id="finance"><div class="consumer-heading"><span class="service-icon finance-icon" aria-hidden="true">¤</span><h3>cw-finance</h3><span class="delivery-indicator" id="finance-state">WAITING</span></div><div class="consumer-meta"><span>GROUP · …_finance_karafka</span><strong id="finance-next">P0 · NEXT 0</strong></div><div class="finance-members finance-group-boundary" data-group-label="FINANCE CONSUMER GROUP"><div class="finance-member"><strong>Finance A</strong><small>P0</small><span class="member-state" id="member-state">WAITING</span><div class="member-progress"><i id="processing-fill"></i></div><div class="member-records"><small id="finance-record">—</small></div></div></div></article>
-        <article class="node consumer-card is-deemphasized" id="message-center"><div class="consumer-heading"><span class="service-icon message-icon" aria-hidden="true">●</span><h3>cw-message-center</h3><span class="delivery-indicator">IDLE</span></div><div class="consumer-meta"><span>GROUP · …_message_center_karafka</span></div></article>
+        <article class="node consumer-card is-deemphasized" id="orders"><div class="consumer-heading"><span class="service-icon orders-icon" aria-hidden="true">✓</span><h3>cw-orders</h3><span class="delivery-indicator">IDLE</span></div><div class="consumer-meta"><span>GROUP · orders-disputes</span></div></article>
+        <article class="node consumer-card" id="finance"><div class="consumer-heading"><span class="service-icon finance-icon" aria-hidden="true">¤</span><h3>cw-finance</h3><span class="delivery-indicator" id="finance-state">WAITING</span></div><div class="consumer-meta"><span>GROUP · finance-disputes</span><strong id="finance-next">P0 · NEXT 0</strong></div><p class="broker-client-meta" id="consumer-metadata"></p><div class="finance-members finance-group-boundary" data-group-label="FINANCE CONSUMER GROUP"><div class="finance-member"><strong>Finance A</strong><small>P0</small><span class="member-state" id="member-state">WAITING</span><div class="member-progress"><i id="processing-fill"></i></div><div class="member-records"><small id="finance-record">—</small></div></div></div></article>
+        <article class="node consumer-card is-deemphasized" id="message-center"><div class="consumer-heading"><span class="service-icon message-icon" aria-hidden="true">●</span><h3>cw-message-center</h3><span class="delivery-indicator">IDLE</span></div><div class="consumer-meta"><span>GROUP · message-center-disputes</span></div></article>
       </section>
     </div>
-    <div class="scene-prompt" aria-live="polite"><span>ASK THE ROOM</span><p id="scene-prompt">What would you do?</p></div>
+    <div class="scene-prompt" hidden><span id="prompt-label"></span><p id="scene-prompt">What would you do?</p></div>
     <footer class="playback-controls" aria-label="Scenario and animation controls">
       <div class="playback-left"><button class="pause-button" id="pause" aria-pressed="false">Ⅱ Pause</button><label class="speed-control" for="speed"><span>Animation speed</span><input id="speed" type="range" min="0.25" max="1.5" step="0.05" value="0.5" /><small><span>SLOWEST</span><span>FASTEST</span></small><output id="speed-output">0.5×</output></label></div>
-      <div class="playback-right"><span class="flow-state" id="live"><i></i><span>PLAYING</span></span><button class="previous-button" data-replay="0">Failure</button><button class="previous-button" data-replay="1">Replication</button><button class="previous-button" data-replay="2">Failover</button><button class="reset-button" id="reset">Reset scene</button><button class="previous-button" id="previous" disabled>← Previous</button><button class="next-button" id="next">What would you do? →</button></div>
+      <div class="playback-right"><span class="flow-state" id="live"><i></i><span>PLAYING</span></span><button class="previous-button" data-replay="0">Failure</button><button class="previous-button" data-replay="1">Replicate All</button><button class="previous-button" data-replay="3">Failover</button><button class="previous-button" data-replay="4">ISR</button><button class="reset-button" id="reset">Reset scene</button><button class="previous-button" id="previous" disabled>← Previous</button><button class="next-button" id="next">Next →</button></div>
     </footer>
   </main>
 </div>

@@ -1,0 +1,68 @@
+/* Structural lesson cues stay local to Consumer Groups. */
+.groups-page .partition-row.is-new-partition {
+  border-color: #8058d8;
+  background: #f4effc;
+  box-shadow: 0 0 0 3px #ede6fa;
+}
+.groups-page .finance-group-boundary {
+  padding: 8px;
+  border: 2px solid #baa2e4;
+}
+.groups-page .finance-group-boundary::before {
+  margin-bottom: 7px;
+  line-height: 1.4;
+}
+.groups-page .finance-member.is-idle { opacity: 1; }
+.groups-page .finance-member.is-idle > strong { color: #7a8798; }
+.groups-page .finance-member .member-lag { font-weight: 700; }
+.groups-page .finance-member .member-next:empty { display: none; }
+.groups-page .finance-member[data-activity="lagging"] .member-lag {
+  color: #925d1d;
+  background: #fff1dc;
+}
+.groups-page .playback-controls [hidden] { display: none; }
+.groups-page .scene-prompt p { white-space: normal; line-height: 1.4; }
+.groups-page .scene-prompt { min-height: 44px; }
+.groups-page .groups-flow .consumer-card.is-deemphasized,
+.groups-page .groups-flow #message-card.is-deemphasized {
+  min-height: 36px;
+  padding: 5px 8px;
+}
+.groups-page .consumer-card.is-deemphasized .consumer-meta,
+.groups-page .consumer-card.is-deemphasized .work-result,
+.groups-page .consumer-card.is-deemphasized .processing-progress,
+.groups-page .consumer-card.is-deemphasized .consumer-name small { display: none; }
+@media (max-height: 820px) {
+  .groups-page .finance-member { row-gap: 1px; }
+  .groups-page .finance-group-boundary { padding: 5px; }
+  .groups-page .finance-group-boundary::before { margin-bottom: 4px; }
+  .groups-page .scene-prompt { min-height: 38px; }
+}
+
+/* These groups remain active; dimming only directs attention to Finance. */
+.groups-page .is-deemphasized .delivery-indicator { display: none; }
+
+/* Only the keyed/unkeyed ordering examples reveal this producer inset. */
+.groups-page .partition-selection[hidden] { display: none; }
+.groups-page .partition-selection { margin-top: 12px; padding: 10px; border: 1px solid #d8cbea; border-radius: 9px; background: #faf8fe; font-size: 12px; }
+.groups-page .selection-heading { display: block; margin-bottom: 7px; color: #75608e; font-size: 12px; letter-spacing: .04em; }
+.groups-page #selection-key { font-family: 'DM Mono', monospace; margin-bottom: 7px; overflow-wrap: anywhere; }
+.groups-page .selection-steps { display: flex; align-items: center; gap: 8px; }
+.groups-page #selection-method { flex: 1; }
+.groups-page #selection-method,.groups-page #selection-result { padding: 5px 7px; border: 1px solid #ded6ea; border-radius: 5px; background: white; }
+.groups-page .partition-selection [data-active=true] { border-color: #8058d8 !important; background: #ede6fa !important; color: #65429e; }
+.groups-page #selection-note { margin: 7px 0 0; color: #687b94; line-height: 1.4; }
+
+.groups-page .producer-events[hidden] { display: none; }
+.groups-page .selection-source,.groups-page .selection-output,.groups-page .selection-logic { padding: 8px; border: 1px solid #ded6ea; border-radius: 6px; background: white; }
+.groups-page .selection-source strong { display: block; margin-bottom: 4px; }
+.groups-page .selection-source #selection-key { margin: 0; font-size: 12px; }
+.groups-page .selection-logic { text-align: center; }
+.groups-page .selection-logic #selection-method { display: block; border: 0; padding: 0; }
+.groups-page .selection-output { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.groups-page .selection-link { position: relative; height: 26px; margin: 0 auto; width: 2px; background: #b5a0d5; }
+.groups-page .selection-link span { position: absolute; bottom: -3px; left: -5px; color: #8058d8; font-size: 12px; }
+.groups-page .selection-link i { display: none; position: absolute; top: var(--travel,0%); left: -4px; width: 10px; height: 10px; border-radius: 50%; background: #8058d8; box-shadow: 0 0 0 3px #ede6fa; transform: translateY(-50%); }
+.groups-page .selection-link.is-travelling i { display: block; }
+
+.groups-page .selection-link i::after { content: attr(data-label); position: absolute; left: 15px; top: -3px; white-space: nowrap; font-size: 12px; font-weight: 700; color: #65429e; background: #faf8fe; padding: 1px 4px; border-radius: 3px; }
